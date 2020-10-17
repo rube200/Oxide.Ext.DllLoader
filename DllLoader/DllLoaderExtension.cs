@@ -1,7 +1,6 @@
 ﻿#region
 
 using System.Linq;
-using System.Reflection;
 using JetBrains.Annotations;
 using Oxide.Core;
 using Oxide.Core.Extensions;
