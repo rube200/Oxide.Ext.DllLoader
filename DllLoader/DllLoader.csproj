@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net461</TargetFramework>
+		<OutputType>Library</OutputType>
+		<Version>1.0.2</Version>
+		<Authors>Rube200</Authors>
+		<Company>Rube200-Devs</Company>
+		<RepositoryType>Public</RepositoryType>
+		<RepositoryUrl>https://github.com/rube200/Oxide.Ext.DllLoader</RepositoryUrl>
+		<RootNamespace>Oxide.Ext.DllLoader</RootNamespace>
+		<AssemblyName>Oxide.Ext.DllLoader</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="OpenMod.Rust.Oxide.Redist" Version="2.0.4765" />
+	  <PackageReference Include="OpenMod.UnityEngine.Redist" Version="2019.3.5" />
+	</ItemGroup>
+
+</Project>
