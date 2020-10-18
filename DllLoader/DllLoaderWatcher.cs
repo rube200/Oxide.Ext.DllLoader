@@ -26,6 +26,9 @@ namespace Oxide.Ext.DllLoader
             try
             {
                 Watcher = new FSWatcher(pluginDirectory, "*.dll");
+                if (!Interface.Oxide.Config.Options.PluginWatchers)
+                    return;
+
                 var fileWatcher = GetFileWatcher.GetValue(Watcher) as FileSystemWatcher;
                 var originalWatcherChanged =
                     (FileSystemEventHandler) Delegate.CreateDelegate(typeof(FileSystemEventHandler), Watcher,
