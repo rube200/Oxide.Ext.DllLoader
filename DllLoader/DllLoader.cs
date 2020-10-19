@@ -132,7 +132,7 @@ namespace Oxide.Ext.DllLoader
             return plugin;
         }
 
-        private void OnGetPluginsInFile(string filepath, ref HashSet<string> plugins)
+        private void OnGetPluginsInFile(string filepath, HashSet<string> plugins)
         {
             var fileName = Utility.GetFileNameWithoutExtension(filepath);
             if (!_filePlugins.TryGetValue(fileName, out var pluginsName))

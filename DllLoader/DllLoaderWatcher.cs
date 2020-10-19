@@ -15,7 +15,7 @@ namespace Oxide.Ext.DllLoader
 {
     public sealed class DllLoaderWatcher
     {
-        public delegate void PluginsInFile(string filePath, ref HashSet<string> plugins);
+        public delegate void PluginsInFile(string filePath, HashSet<string> plugins);
 
         private readonly Dictionary<string, QueuedChange> _changeQueue;
         private readonly Timer _timers;
@@ -55,9 +55,7 @@ namespace Oxide.Ext.DllLoader
         private IEnumerable<string> GetPluginsInFile(string fileName)
         {
             var plugins = new HashSet<string>();
-
-            OnGetPluginsInFile?.Invoke(fileName, ref plugins);
-
+            OnGetPluginsInFile?.Invoke(fileName, plugins);
             return plugins;
         }
 
