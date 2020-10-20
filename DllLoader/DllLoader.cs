@@ -6,7 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using Oxide.Core;
+using Oxide.Core.CSharp;
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
 
@@ -53,7 +55,10 @@ namespace Oxide.Ext.DllLoader
         private IEnumerable<Type> GetPluginsTypes(string directory, string fileName)
         {
             var filePath = GetPath(directory, fileName);
-            var assemblyPlugin = Assembly.Load(File.ReadAllBytes(filePath));
+            var assemblyBytes = File.ReadAllBytes(filePath);
+            PatchAssembly(ref assemblyBytes);
+
+            var assemblyPlugin = Assembly.Load(assemblyBytes);
 
             Type[] types;
             try
@@ -130,6 +135,44 @@ namespace Oxide.Ext.DllLoader
             csharpPlugin.SetPluginInfo(pluginName, _pluginsPath[pluginName]);
 
             return plugin;
+        }
+
+        private void PatchAssembly(ref byte[] assemblyBytes)
+        {
+            AssemblyDefinition definition;
+            using (var stream = new MemoryStream(assemblyBytes)) 
+                definition = AssemblyDefinition.ReadAssembly(stream);
+
+            foreach (var type in definition.MainModule.Types)
+            {
+                var found = false;
+                var typeDefinition = type;
+
+                while (true)
+                {
+                    if (typeDefinition.FullName == "Oxide.Plugins.CSharpPlugin")
+                    {
+                        found = true;
+                        break;
+                    }
+
+                    if (typeDefinition.BaseType is null)
+                        break;
+
+                    typeDefinition = typeDefinition.BaseType.Resolve();
+                }
+
+                if (!found)
+                    continue;
+
+                _ = new DirectCallMethod(definition.MainModule, type);
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                definition.Write(stream);
+                assemblyBytes = stream.ToArray();
+            }
         }
 
         private void OnGetPluginsInFile(string filepath, HashSet<string> plugins)
