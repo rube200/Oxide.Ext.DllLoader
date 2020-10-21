@@ -14,28 +14,15 @@ namespace Oxide.Ext.DllLoader
     [UsedImplicitly]
     public sealed class DllLoader : PluginLoader
     {
-        #region Debug
-
-        public static readonly bool Debug = false;
-
-        internal static void LogDebug(string message)
-        {
-            if (!Debug)
-                return;
-
-            Interface.Oxide.LogDebug(message);
-        }
-
-        #endregion
-
-        public override string FileExtension => ".dll";
         private readonly DllLoaderMapper _dllLoaderMapper;
         private DllLoaderWatcher _watcher;
-        
+
         public DllLoader()
         {
             _dllLoaderMapper = new DllLoaderMapper(this);
         }
+
+        public override string FileExtension => ".dll";
 
         internal void OnModLoaded()
         {
@@ -106,6 +93,20 @@ namespace Oxide.Ext.DllLoader
             LogDebug($"Return {plugin}; (CSharpPlugin)");
             return plugin;
         }
+
+        #region Debug
+
+        public static readonly bool Debug = false;
+
+        internal static void LogDebug(string message)
+        {
+            if (!Debug)
+                return;
+
+            Interface.Oxide.LogDebug(message);
+        }
+
+        #endregion
 
         #region Watcher
 

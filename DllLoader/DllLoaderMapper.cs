@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +10,8 @@ using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Core.CSharp;
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Ext.DllLoader
 {
@@ -63,7 +67,8 @@ namespace Oxide.Ext.DllLoader
                 registeredPlugins.AddRange(plugins);
             }
 
-            DllLoader.LogDebug($"Return {registeredPlugins}; Count: {registeredPlugins.Count} (from plugins directory)");
+            DllLoader.LogDebug(
+                $"Return {registeredPlugins}; Count: {registeredPlugins.Count} (from plugins directory)");
             return registeredPlugins;
         }
 
@@ -95,7 +100,9 @@ namespace Oxide.Ext.DllLoader
             {
                 byte[] hash;
                 using (var sha1 = SHA1.Create())
+                {
                     hash = sha1.ComputeHash(memory.ToArray());
+                }
 
                 if (VerifyAssemblyHash(filePath, hash) && _registeredAssemblies.TryGetValue(filePath, out var assembly))
                 {
@@ -107,7 +114,7 @@ namespace Oxide.Ext.DllLoader
             }
 
             PatchAssembly(assemblyDefinition);
-            
+
             Assembly pluginAssembly;
             using (var memory = new MemoryStream())
             {
@@ -137,7 +144,7 @@ namespace Oxide.Ext.DllLoader
             _assembliesHash[filePath] = expectedHash;
             DllLoader.LogDebug("Return false; (hash updated)");
             return false;
-        } 
+        }
 
         private void PatchAssembly(AssemblyDefinition assemblyDefinition)
         {
@@ -163,6 +170,7 @@ namespace Oxide.Ext.DllLoader
 
                 _ = new DirectCallMethod(assemblyDefinition.MainModule, type);
             }
+
             DllLoader.LogDebug("Patch Completed!");
         }
 
@@ -202,10 +210,8 @@ namespace Oxide.Ext.DllLoader
             {
                 Interface.Oxide.LogException($"[{assembly.GetName().Name}]", ex);
                 if (ex.LoaderExceptions != null && ex.LoaderExceptions.Length > 0)
-                {
                     foreach (var loaderException in ex.LoaderExceptions)
                         Interface.Oxide.LogException($"[{assembly.GetName().Name}]", loaderException);
-                }
 
                 pluginTypes = ex.Types.Where(tp => tp != null).ToArray();
             }
@@ -231,7 +237,7 @@ namespace Oxide.Ext.DllLoader
                 DllLoader.LogDebug($"Return {pluginType};");
                 return pluginType;
             }
-            
+
             var filePath = GetPluginPathByName(pluginName);
             if (!string.IsNullOrEmpty(filePath))
             {
