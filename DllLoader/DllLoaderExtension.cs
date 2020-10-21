@@ -21,7 +21,7 @@ namespace Oxide.Ext.DllLoader
 
         public override string Name => "DllLoader";
         public override string Author => "Rube200";
-        public override VersionNumber Version => new VersionNumber(1, 0, 3);
+        public override VersionNumber Version => new VersionNumber(1, 0, 4);
 
         public override void Load()
         {

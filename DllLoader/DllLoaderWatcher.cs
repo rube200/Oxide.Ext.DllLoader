@@ -63,12 +63,12 @@ namespace Oxide.Ext.DllLoader
         {
             var fileSystemWatcher = (FileSystemWatcher) sender;
             var length = e.FullPath.Length - fileSystemWatcher.Path.Length - Path.GetExtension(e.Name).Length - 1;
-            var subPath = e.FullPath.Substring(fileSystemWatcher.Path.Length + 1, length);
+            var fileName = e.FullPath.Substring(fileSystemWatcher.Path.Length + 1, length);
 
-            if (!_changeQueue.TryGetValue(subPath, out var change))
+            if (!_changeQueue.TryGetValue(fileName, out var change))
             {
                 change = new QueuedChange();
-                _changeQueue[subPath] = change;
+                _changeQueue[fileName] = change;
             }
 
             change.OxideTimer?.Destroy();
@@ -86,7 +86,7 @@ namespace Oxide.Ext.DllLoader
                 case WatcherChangeTypes.Deleted:
                     if (change.ChangeType == WatcherChangeTypes.Created)
                     {
-                        _changeQueue.Remove(subPath);
+                        _changeQueue.Remove(fileName);
                         return;
                     }
 
@@ -104,10 +104,10 @@ namespace Oxide.Ext.DllLoader
                 change.OxideTimer = _timers.Once(0.2f, () =>
                 {
                     change.OxideTimer = null;
-                    _changeQueue.Remove(subPath);
+                    _changeQueue.Remove(fileName);
 
-                    var pluginsName = GetPluginsInFile(subPath);
-                    if (Regex.Match(subPath, "include\\\\", RegexOptions.IgnoreCase).Success)
+                    var pluginsName = GetPluginsInFile(e.FullPath);
+                    if (Regex.Match(fileName, "include\\\\", RegexOptions.IgnoreCase).Success)
                     {
                         if (change.ChangeType != WatcherChangeTypes.Created &&
                             change.ChangeType != WatcherChangeTypes.Changed)
