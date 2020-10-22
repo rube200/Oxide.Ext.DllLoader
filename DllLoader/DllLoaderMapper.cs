@@ -148,30 +148,38 @@ namespace Oxide.Ext.DllLoader
 
         private void PatchAssembly(AssemblyDefinition assemblyDefinition)
         {
-            DllLoader.LogDebug($"PatchAssembly({assemblyDefinition})");
-            foreach (var type in assemblyDefinition.MainModule.Types)
+            try
             {
-                var pluginType = false;
-                var typeDefinition = type.BaseType?.Resolve();
-
-                while (typeDefinition != null)
+                DllLoader.LogDebug($"PatchAssembly({assemblyDefinition})");
+                foreach (var type in assemblyDefinition.MainModule.Types)
                 {
-                    if (typeDefinition.FullName == "Oxide.Plugins.CSharpPlugin")
+                    var pluginType = false;
+                    var typeDefinition = type.BaseType?.Resolve();
+
+                    while (typeDefinition != null)
                     {
-                        pluginType = true;
-                        break;
+                        if (typeDefinition.FullName == "Oxide.Plugins.CSharpPlugin")
+                        {
+                            pluginType = true;
+                            break;
+                        }
+
+                        typeDefinition = typeDefinition.BaseType?.Resolve();
                     }
 
-                    typeDefinition = typeDefinition.BaseType?.Resolve();
+                    if (!pluginType)
+                        continue;
+
+                    _ = new DirectCallMethod(assemblyDefinition.MainModule, type);
                 }
 
-                if (!pluginType)
-                    continue;
-
-                _ = new DirectCallMethod(assemblyDefinition.MainModule, type);
+                DllLoader.LogDebug("Patch Completed!");
             }
-
-            DllLoader.LogDebug("Patch Completed!");
+            catch (Exception ex)
+            {
+                Interface.Oxide.LogException($"Fail to PatchAssembly: {assemblyDefinition}", ex);
+                throw;
+            }
         }
 
         #endregion
@@ -195,16 +203,16 @@ namespace Oxide.Ext.DllLoader
         private IEnumerable<string> GetOrRegisterPlugins(string filePath, Assembly assembly)
         {
             DllLoader.LogDebug($"GetOrRegisterPlugins({filePath}, {assembly})");
-            if (_fileTypes.TryGetValue(filePath, out var plugins))
+            if (_fileTypes.TryGetValue(filePath, out var registeredPlugins))
             {
-                DllLoader.LogDebug($"Return {plugins}; Count: {plugins.Count} (from cache)");
-                return plugins;
+                DllLoader.LogDebug($"Return {registeredPlugins}; Count: {registeredPlugins.Count} (from cache)");
+                return registeredPlugins;
             }
 
-            Type[] pluginTypes;
+            HashSet<string> plugins;
             try
             {
-                pluginTypes = assembly.GetTypes();
+                plugins = GetPluginsFromTypes(assembly.GetTypes());
             }
             catch (ReflectionTypeLoadException ex)
             {
@@ -213,20 +221,24 @@ namespace Oxide.Ext.DllLoader
                     foreach (var loaderException in ex.LoaderExceptions)
                         Interface.Oxide.LogException($"[{assembly.GetName().Name}]", loaderException);
 
-                pluginTypes = ex.Types.Where(tp => tp != null).ToArray();
+                plugins = GetPluginsFromTypes(ex.Types.Where(tp => tp != null).ToArray());
             }
 
-            var pluginNames = new HashSet<string>();
-            foreach (var pluginType in pluginTypes.Where(tp => !tp.IsAbstract && typeof(Plugin).IsAssignableFrom(tp)))
+            _fileTypes[filePath] = plugins;
+            DllLoader.LogDebug($"Return {plugins}; Count: {plugins.Count} (from assembly)");
+            return plugins;
+        }
+
+        private HashSet<string> GetPluginsFromTypes(Type[] types)
+        {
+            var plugins = new HashSet<string>();
+            foreach (var pluginType in types.Where(tp => !tp.IsAbstract && typeof(Plugin).IsAssignableFrom(tp)))
             {
                 DllLoader.LogDebug($"Plugin: '{pluginType.Name}'");
-                pluginNames.Add(pluginType.Name);
+                plugins.Add(pluginType.Name);
                 _pluginsType[pluginType.Name] = pluginType;
             }
-
-            _fileTypes[filePath] = pluginNames;
-            DllLoader.LogDebug($"Return {pluginNames}; Count: {pluginNames.Count} (from assembly)");
-            return pluginNames;
+            return plugins;
         }
 
         internal Type GetPluginTypeByName(string pluginName)

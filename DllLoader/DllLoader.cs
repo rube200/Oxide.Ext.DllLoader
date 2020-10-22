@@ -36,62 +36,86 @@ namespace Oxide.Ext.DllLoader
 
         public override IEnumerable<string> ScanDirectory(string directory)
         {
-            LogDebug($"ScanDirectory({directory})");
-            var plugins = _dllLoaderMapper.ScanAndMapPluginsDir(directory);
-            LogDebug($"Return {plugins}; Count: {plugins.Count}");
-            return plugins;
+            try
+            {
+                LogDebug($"ScanDirectory({directory})");
+                var plugins = _dllLoaderMapper.ScanAndMapPluginsDir(directory);
+                LogDebug($"Return {plugins}; Count: {plugins.Count}");
+                return plugins;
+            }
+            catch (Exception ex)
+            {
+                Interface.Oxide.LogException($"Fail to scan directory: {directory}", ex);
+                return new List<string>();
+            }
         }
 
         public override Plugin Load(string directory, string name)
         {
-            LogDebug($"Load({directory}, {name})");
-            if (LoadingPlugins.Contains(name))
+            try
             {
-                LogDebug("Return null; (plugin already loading)");
+                LogDebug($"Load({directory}, {name})");
+                if (LoadingPlugins.Contains(name))
+                {
+                    LogDebug("Return null; (plugin already loading)");
+                    return null;
+                }
+
+                var plugin = GetPlugin(name);
+                if (plugin == null)
+                {
+                    LogDebug("Return null; (plugin not found)");
+                    return null;
+                }
+
+                LoadingPlugins.Add(plugin.Name);
+                Interface.Oxide.NextTick(() => LoadPlugin(plugin));
+                LogDebug("Return null; (load on next tick)");
                 return null;
             }
-
-            var plugin = GetPlugin(name);
-            if (plugin == null)
+            catch (Exception ex)
             {
-                LogDebug("Return null; (plugin not found)");
+                Interface.Oxide.LogException($"Fail to load plugin: {name}", ex);
                 return null;
             }
-
-            LoadingPlugins.Add(plugin.Name);
-            Interface.Oxide.NextTick(() => LoadPlugin(plugin));
-            LogDebug("Return null; (load on next tick)");
-            return null;
         }
 
         protected override Plugin GetPlugin(string name)
         {
-            LogDebug($"GetPlugin({name})");
-            var pluginType = _dllLoaderMapper.GetPluginTypeByName(name);
-            if (pluginType is null)
+            try
             {
-                LogDebug("Return null; (type not found)");
-                return null;
-            }
+                LogDebug($"GetPlugin({name})");
+                var pluginType = _dllLoaderMapper.GetPluginTypeByName(name);
+                if (pluginType is null)
+                {
+                    LogDebug("Return null; (type not found)");
+                    return null;
+                }
 
-            if (!(Activator.CreateInstance(pluginType) is Plugin plugin))
-            {
-                LogDebug("Return null; (invalid plugin type)");
-                return null;
-            }
+                if (!(Activator.CreateInstance(pluginType) is Plugin plugin))
+                {
+                    LogDebug("Return null; (invalid plugin type)");
+                    return null;
+                }
 
-            if (!(plugin is CSharpPlugin csharpPlugin))
-            {
-                LogDebug($"Return {plugin}; (not CSharpPlugin)");
+                if (!(plugin is CSharpPlugin csharpPlugin))
+                {
+                    LogDebug($"Return {plugin}; (not CSharpPlugin)");
+                    return plugin;
+                }
+
+                var pluginPath = _dllLoaderMapper.GetPluginPathByName(name);
+                csharpPlugin.SetPluginInfo(name, pluginPath);
+                csharpPlugin.Watcher = _watcher.Watcher;
+
+                LogDebug($"Return {plugin}; (CSharpPlugin)");
                 return plugin;
             }
-
-            var pluginPath = _dllLoaderMapper.GetPluginPathByName(name);
-            csharpPlugin.SetPluginInfo(name, pluginPath);
-            csharpPlugin.Watcher = _watcher.Watcher;
-
-            LogDebug($"Return {plugin}; (CSharpPlugin)");
-            return plugin;
+            catch (Exception ex)
+            {
+                Interface.Oxide.LogException($"Fail to get plugin: {name}", ex);
+                return null;
+            }
         }
 
         #region Debug
