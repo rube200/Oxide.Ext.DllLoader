@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net461</TargetFramework>
+		<TargetFramework>net462</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>1.0.4</Version>
+		<Version>1.1.0</Version>
 		<Authors>Rube200</Authors>
 		<Company>Rube200-Devs</Company>
 		<RepositoryType>Public</RepositoryType>
@@ -13,8 +13,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="OpenMod.Rust.Oxide.Redist" Version="2.0.4765" />
-	  <PackageReference Include="OpenMod.UnityEngine.Redist" Version="2019.3.5" />
+	  <Reference Include="Oxide.Core">
+	    <HintPath>Oxide.Libs\Oxide.Core.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Oxide.CSharp">
+	    <HintPath>Oxide.Libs\Oxide.CSharp.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="AsmResolver.PE" Version="5.4.0" />
 	</ItemGroup>
 
 </Project>
