@@ -108,19 +108,29 @@ namespace Oxide.Ext.DllLoader.Manager
 
         private Assembly LoadAssembly(string assemblyPath)
         {
-            var readerParameters = new ReaderParameters { ReadSymbols = true };
-            var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyPath, readerParameters);
+            var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyPath);
 
             var originalFullName = assemblyDefinition.FullName;
             assemblyDefinition.PatchAssembly(patchName:true, patchOxide:true);
 
+            byte[] symbolsData = null;
+            var symbolsPath = Path.ChangeExtension(assemblyPath, ".pdb");
+            if (File.Exists(symbolsPath))
+            {
+                using (var fileStream = new FileStream(symbolsPath, FileMode.Open, FileAccess.Read))
+                {
+                    symbolsData = new byte[fileStream.Length];
+                    var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
+                    if (count != symbolsData.Length)
+                        Interface.Oxide.LogWarning("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsPath, count, symbolsData.Length);
+                }
+            }
+
             Assembly assembly;
             using (var stream = new MemoryStream())
             {
-                var writeParameters = new WriterParameters { WriteSymbols = true };
-                assemblyDefinition.Write(stream, writeParameters);
-
-                assembly = Assembly.Load(stream.ToArray());
+                assemblyDefinition.Write(stream);
+                assembly = Assembly.Load(stream.ToArray(), symbolsData);
             }
 
             if (originalFullName == assembly.FullName)
