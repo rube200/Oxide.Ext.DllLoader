@@ -19,10 +19,9 @@
 	  <Reference Include="Oxide.CSharp">
 	    <HintPath>Oxide.Libs\Oxide.CSharp.dll</HintPath>
 	  </Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Include="AsmResolver.PE" Version="5.4.0" />
+	  <Reference Include="Oxide.References">
+	    <HintPath>Oxide.Libs\Oxide.References.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

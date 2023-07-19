@@ -1,16 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Text;
-using AsmResolver.IO;
-using AsmResolver.PE.DotNet.Builder;
-using AsmResolver.PE;
-using AsmResolver.PE.DotNet.Metadata.Strings;
-using AsmResolver.PE.DotNet.Metadata.Tables;
-using AsmResolver.PE.DotNet.Metadata.Tables.Rows;
 using Oxide.Core;
 using System.Linq;
+using Mono.Cecil;
 using Oxide.Core.Plugins;
 
 namespace Oxide.Ext.DllLoader.Helpers
@@ -43,30 +36,17 @@ namespace Oxide.Ext.DllLoader.Helpers
             return pluginsType;
         }
 
-        public static (string, string, string) GetNameFromAssemblyDefinitionRow(AssemblyDefinitionRow assemblyRow, StringsStream stringsStream)
-        {
-            var name = stringsStream.GetStringByIndex(assemblyRow.Name);
-            var version = new Version(assemblyRow.MajorVersion, assemblyRow.MinorVersion, assemblyRow.BuildNumber, assemblyRow.RevisionNumber);
-            var culture = stringsStream.GetStringByIndex(assemblyRow.Culture);
-
-            var originalFullName = $"{name}, Version={version}, Culture={culture}, PublicKeyToken=null";
-            var newName = $"{name}-{DateTime.UtcNow.Ticks}";
-
-            return (name, originalFullName, newName);
-        }
-
         //returns the patched assembly(unless it fails) and also returns original name
-        public static (byte[], string) PatchAssemblyName(byte[] assemblyData)
+        public static void PatchAssembly(this AssemblyDefinition assemblyDefinition, bool patchName = true, bool patchOxide = true)
         {
-            Interface.Oxide.LogDebug("Patching assembly name...");
+            Interface.Oxide.LogDebug("Patching assembly name({0}), oxide({1})...", patchName, patchOxide);
             try
             {
-                var peImage = PEImage.FromBytes(assemblyData);
+                var originalName = assemblyDefinition.FullName;
+                if (patchName)
+                    assemblyDefinition.Name.Name = $"{originalName}-{DateTime.UtcNow.Ticks}";
 
-                var metadata = peImage.DotNetDirectory?.Metadata;
-                if (metadata == null)
-                    return (assemblyData, null);
-
+                /*
                 var stringsStream = metadata.GetStream<StringsStream>();
                 var stringsStreamIndex = metadata.Streams.IndexOf(stringsStream);
 
@@ -109,12 +89,11 @@ namespace Oxide.Ext.DllLoader.Helpers
                 }
 
                 Interface.Oxide.LogDebug("Assembly name patched.{2}Old name:{0}{2}New name:{1}", name, newName, Environment.NewLine);
-                return (assemblyData, originalFullName);
+                return (assemblyData, originalFullName);*/
             }
             catch (Exception ex)
             {
                 Interface.Oxide.LogException("Fail to patch assembly name.", ex);
-                return (assemblyData, null);
             }
         }
     }

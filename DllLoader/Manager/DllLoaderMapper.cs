@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Ext.DllLoader.Helpers;
 using FileAttributes = System.IO.FileAttributes;
@@ -107,35 +108,22 @@ namespace Oxide.Ext.DllLoader.Manager
 
         private Assembly LoadAssembly(string assemblyPath)
         {
-            var assemblyData = LoadFileData(assemblyPath);
-            var symbolsPath = Path.ChangeExtension(assemblyPath, "pdb");
-            var symbolsData = LoadFileData(symbolsPath);
+            var readerParameters = new ReaderParameters { ReadSymbols = true };
+            var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyPath, readerParameters);
 
-            return LoadAssembly(assemblyData, symbolsData);
+            var originalFullName = assemblyDefinition.FullName;
+            assemblyDefinition.PatchAssembly(patchName:true, patchOxide:true);
 
-        }
-        private static byte[] LoadFileData(string filepath)
-        {
-            if (!File.Exists(filepath))
-                return null;
-
-            byte[] fileData;
-            using (var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read))
+            Assembly assembly;
+            using (var stream = new MemoryStream())
             {
-                fileData = new byte[fileStream.Length];
-                var count = fileStream.Read(fileData, 0, fileData.Length);
+                var writeParameters = new WriterParameters { WriteSymbols = true };
+                assemblyDefinition.Write(stream, writeParameters);
 
-                if (count != fileData.Length)
-                    Interface.Oxide.LogWarning("Loaded {0}bytes of {1}bytes from file({2}).", count, fileData.Length, filepath);
+                assembly = Assembly.Load(stream.ToArray());
             }
-            return fileData;
-        }
-        private Assembly LoadAssembly(byte[] assemblyData, byte[] symbolsData = null)
-        {
-            var (newAssemblyData, originalAssemblyName) = AssemblyHelper.PatchAssemblyName(assemblyData);
 
-            var assembly = Assembly.Load(newAssemblyData, symbolsData);
-            _loadedAssemblies[originalAssemblyName ?? assembly.FullName] = assembly;
+            _loadedAssemblies[originalFullName ?? assembly.FullName] = assembly;
             return assembly;
         }
 
