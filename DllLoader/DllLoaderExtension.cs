@@ -2,6 +2,7 @@
 
 using Oxide.Core;
 using Oxide.Core.Extensions;
+using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Manager;
 
 #endregion
@@ -14,17 +15,24 @@ namespace Oxide.Ext.DllLoader
         public override string Name => "DllLoader";
         public override string Author => "Rube200";
         public override VersionNumber Version => new VersionNumber(1, 1, 1);
+        public FSWatcher Watcher { get; private set; }
+
 
         private DllLoaderPluginManager _pluginsLoader;
 
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
-        { }
+        {
+            _pluginsLoader = new DllLoaderPluginManager();
+        }
+        ~DllLoaderExtension()
+        {
+            _pluginsLoader = null;
+        }
 
 
         public override void Load()
         {
-            _pluginsLoader = new DllLoaderPluginManager();
             Manager.RegisterPluginLoader(_pluginsLoader);
 
             Interface.Oxide.OnFrame(OnFrame);
@@ -32,13 +40,14 @@ namespace Oxide.Ext.DllLoader
 
         public override void LoadPluginWatchers(string pluginDirectory)
         {
- 
+            Watcher = new FSWatcher(pluginDirectory, "*.dll");
+            Manager.RegisterPluginChangeWatcher(Watcher);
         }
 
 
         public override void OnModLoad()
         {
-            _pluginsLoader.OnModLoaded();
+            _pluginsLoader.OnModLoad();
         }
 
         public override void OnShutdown()
