@@ -123,6 +123,9 @@ namespace Oxide.Ext.DllLoader.Manager
                 assembly = Assembly.Load(stream.ToArray());
             }
 
+            if (originalFullName == assembly.FullName)
+                Interface.Oxide.LogDebug("Assembly name patch failed.{2}Old name:{0}{2}New name:{1}", originalFullName, assembly.FullName, Environment.NewLine);
+
             _loadedAssemblies[originalFullName ?? assembly.FullName] = assembly;
             return assembly;
         }
