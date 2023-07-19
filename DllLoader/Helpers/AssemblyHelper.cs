@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using AsmResolver.IO;
 using AsmResolver.PE.DotNet.Builder;
@@ -8,11 +10,39 @@ using AsmResolver.PE.DotNet.Metadata.Strings;
 using AsmResolver.PE.DotNet.Metadata.Tables;
 using AsmResolver.PE.DotNet.Metadata.Tables.Rows;
 using Oxide.Core;
+using System.Linq;
+using Oxide.Core.Plugins;
 
 namespace Oxide.Ext.DllLoader.Helpers
 {
     public static class AssemblyHelper
     {
+        public static ISet<Type> GetPlugins(this Assembly assembly)
+        {
+            Type[] assemblyTypes;
+            try
+            {
+                assemblyTypes = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                Interface.Oxide.LogException($"Fail to get types in assembly: {assembly.FullName}", ex);
+                foreach (var loaderException in ex.LoaderExceptions)
+                    Interface.Oxide.LogException("->", loaderException);
+
+                assemblyTypes = ex.Types.Where(tp => tp != null).ToArray();
+            }
+
+            var pluginsType = new HashSet<Type>();
+            foreach (var pluginType in assemblyTypes.Where(tp => !tp.IsAbstract && typeof(Plugin).IsAssignableFrom(tp)))
+            {
+                Interface.Oxide.LogDebug("Plugin found({0}) at {1}", pluginType.Name, assembly.FullName);
+                pluginsType.Add(pluginType);
+            }
+
+            return pluginsType;
+        }
+
         public static (string, string, string) GetNameFromAssemblyDefinitionRow(AssemblyDefinitionRow assemblyRow, StringsStream stringsStream)
         {
             var name = stringsStream.GetStringByIndex(assemblyRow.Name);
