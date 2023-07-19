@@ -23,7 +23,7 @@ namespace Oxide.Ext.DllLoader
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
         {
-            _pluginsLoader = new DllLoaderPluginManager();
+            _pluginsLoader = new DllLoaderPluginManager(this);
         }
         ~DllLoaderExtension()
         {
