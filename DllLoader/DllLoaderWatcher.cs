@@ -12,7 +12,7 @@ using Oxide.Core.Plugins.Watchers;
 #endregion
 
 namespace Oxide.Ext.DllLoader
-{
+{/*
     public sealed class DllLoaderWatcher
     {
         public delegate void PluginsInFile(string filePath, HashSet<string> plugins);
@@ -179,5 +179,5 @@ namespace Oxide.Ext.DllLoader
                 BindingFlags.NonPublic | BindingFlags.Instance);
 
         #endregion
-    }
+    }*/
 }
