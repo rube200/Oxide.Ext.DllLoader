@@ -14,13 +14,13 @@
 
 	<ItemGroup>
 	  <Reference Include="Oxide.Core">
-	    <HintPath>Oxide.Libs\Oxide.Core.dll</HintPath>
+	    <HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Oxide.CSharp">
-	    <HintPath>Oxide.Libs\Oxide.CSharp.dll</HintPath>
+	    <HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
 	  </Reference>
 	  <Reference Include="Oxide.References">
-	    <HintPath>Oxide.Libs\Oxide.References.dll</HintPath>
+	    <HintPath>..\Oxide.Libs\Oxide.References.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 
