@@ -3,37 +3,38 @@
 using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
-using Oxide.Ext.DllLoader.Manager;
+using Oxide.Ext.DllLoader.Controller;
 
 #endregion
 
 namespace Oxide.Ext.DllLoader
 {
     // ReSharper disable once UnusedMember.Global
+    //todo implement last write check
     public sealed class DllLoaderExtension : Extension
     {
         public override string Name => "DllLoader";
         public override string Author => "Rube200";
-        public override VersionNumber Version => new VersionNumber(1, 1, 1);
+        public override VersionNumber Version => new VersionNumber(1, 1, 2);
         public FSWatcher Watcher { get; private set; }
 
 
-        private DllLoaderPluginManager _pluginsLoader;
+        private DllPluginLoaderController _pluginLoader;
 
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
         {
-            _pluginsLoader = new DllLoaderPluginManager(this);
+            _pluginLoader = new DllPluginLoaderController(this);
         }
         ~DllLoaderExtension()
         {
-            _pluginsLoader = null;
+            _pluginLoader = null;
         }
 
 
         public override void Load()
         {
-            Manager.RegisterPluginLoader(_pluginsLoader);
+            Manager.RegisterPluginLoader(_pluginLoader);
 
             Interface.Oxide.OnFrame(OnFrame);
         }
@@ -42,22 +43,29 @@ namespace Oxide.Ext.DllLoader
         {
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
             Manager.RegisterPluginChangeWatcher(Watcher);
+
+            /*
+            var dllWatcher = new DllLoaderWatcher(pluginDirectory);
+            _pluginsLoader.SetWatcher(dllWatcher);
+
+
+            Manager.RegisterPluginChangeWatcher(dllWatcher.Watcher);*/
         }
 
 
         public override void OnModLoad()
         {
-            _pluginsLoader.OnModLoad();
+            _pluginLoader.OnModLoad();
         }
 
         public override void OnShutdown()
         {
-            _pluginsLoader.OnShutdown();
+            _pluginLoader.OnShutdown();
         }
 
         private void OnFrame(float delta)
         {
-            foreach (var plugin in _pluginsLoader.OnFramePlugins)
+            foreach (var plugin in _pluginLoader.OnFramePlugins)
                 plugin.CallHook("OnFrame", new [] { delta });
         }
     }
