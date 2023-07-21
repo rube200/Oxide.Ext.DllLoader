@@ -1,10 +1,14 @@
-﻿using System.IO;
+﻿#region
+
+using System.IO;
 using System.Reflection;
 using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Helper;
 using Oxide.Ext.DllLoader.Model;
+
+#endregion
 
 namespace Oxide.Ext.DllLoader.Controller
 {
@@ -29,14 +33,15 @@ namespace Oxide.Ext.DllLoader.Controller
             Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
             if (!File.Exists(assemblyInfo.AssemblyFile))
             {
-                Interface.Oxide.LogWarning("Fail to load assembly({0}), file({1}) does not exist.", assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
+                Interface.Oxide.LogWarning("Fail to load assembly({0}), file({1}) does not exist.",
+                    assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
                 return false;
             }
 
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyInfo.AssemblyFile);
             var symbols = GetAssemblySymbols(assemblyInfo.AssemblyFile);
 
-            assemblyDefinition.ApplyPatches(name: true, oxide: assemblyInfo.PluginsName.Count > 0);
+            assemblyDefinition.ApplyPatches(true, assemblyInfo.PluginsName.Count > 0);
 
             using (var stream = new MemoryStream())
             {
@@ -63,7 +68,8 @@ namespace Oxide.Ext.DllLoader.Controller
                 var symbolsData = new byte[fileStream.Length];
                 var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
                 if (count != symbolsData.Length)
-                    Interface.Oxide.LogWarning("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count, symbolsData.Length);
+                    Interface.Oxide.LogWarning("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count,
+                        symbolsData.Length);
                 return symbolsData;
             }
         }

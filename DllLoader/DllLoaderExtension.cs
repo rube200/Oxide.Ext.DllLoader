@@ -13,12 +13,6 @@ namespace Oxide.Ext.DllLoader
     //todo implement last write check
     public sealed class DllLoaderExtension : Extension
     {
-        public override string Name => "DllLoader";
-        public override string Author => "Rube200";
-        public override VersionNumber Version => new VersionNumber(1, 1, 2);
-        public FSWatcher Watcher { get; private set; }
-
-
         private DllPluginLoaderController _pluginLoader;
 
 
@@ -26,6 +20,12 @@ namespace Oxide.Ext.DllLoader
         {
             _pluginLoader = new DllPluginLoaderController(this);
         }
+
+        public override string Name => "DllLoader";
+        public override string Author => "Rube200";
+        public override VersionNumber Version => new VersionNumber(1, 1, 2);
+        public FSWatcher Watcher { get; private set; }
+
         ~DllLoaderExtension()
         {
             _pluginLoader = null;
@@ -66,7 +66,7 @@ namespace Oxide.Ext.DllLoader
         private void OnFrame(float delta)
         {
             foreach (var plugin in _pluginLoader.OnFramePlugins)
-                plugin.CallHook("OnFrame", new [] { delta });
+                plugin.CallHook("OnFrame", new[] { delta });
         }
     }
 }

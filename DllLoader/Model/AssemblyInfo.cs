@@ -1,19 +1,31 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Helper;
+
+#endregion
 
 namespace Oxide.Ext.DllLoader.Model
 {
     public class AssemblyInfo : IEquatable<AssemblyInfo>
     {
+        private readonly HashSet<string> _expectedPluginsName = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
         public readonly string AssemblyFile;
         public readonly string OriginalName;
-        private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
-        private readonly HashSet<string> _expectedPluginsName = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private Assembly _assembly;
+
+
+        public AssemblyInfo(string originalName, string filePath)
+        {
+            AssemblyFile = filePath;
+            OriginalName = originalName;
+        }
 
 
         public Assembly Assembly
@@ -26,18 +38,24 @@ namespace Oxide.Ext.DllLoader.Model
             }
         }
 
-        private Assembly _assembly;
         public string AssemblyName => Assembly?.FullName;
         public bool IsAssemblyLoaded => Assembly != null;
         public IReadOnlyCollection<PluginInfo> PluginsInfo => _pluginsInfo;
-        public IReadOnlyCollection<string> PluginsName => IsAssemblyLoaded ? PluginsInfo.Select(pl => pl.PluginName).ToHashSet() : _expectedPluginsName;
+
+        public IReadOnlyCollection<string> PluginsName => IsAssemblyLoaded
+            ? PluginsInfo.Select(pl => pl.PluginName).ToHashSet()
+            : _expectedPluginsName;
 
 
-        public AssemblyInfo(string originalName, string filePath)
+        public bool Equals(AssemblyInfo other)
         {
-            AssemblyFile = filePath;
-            OriginalName = originalName;
+            if (other is null)
+                return false;
+
+            return ReferenceEquals(this, other) ||
+                   OriginalName.Equals(other.OriginalName, StringComparison.OrdinalIgnoreCase);
         }
+
         ~AssemblyInfo()
         {
             _expectedPluginsName.Clear();
@@ -70,24 +88,15 @@ namespace Oxide.Ext.DllLoader.Model
             return _pluginsInfo.FirstOrDefault(pl => pl.PluginName.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-
-        public bool Equals(AssemblyInfo other)
-        {
-            if (other is null)
-                return false;
-
-            return ReferenceEquals(this, other) || OriginalName.Equals(other.OriginalName, StringComparison.OrdinalIgnoreCase);
-        }
-
         public override bool Equals(object obj)
         {
             if (obj is null)
                 return false;
 
-            if (ReferenceEquals(this, obj)) 
+            if (ReferenceEquals(this, obj))
                 return true;
 
-            if (obj.GetType() != GetType()) 
+            if (obj.GetType() != GetType())
                 return false;
 
             return Equals((AssemblyInfo)obj);

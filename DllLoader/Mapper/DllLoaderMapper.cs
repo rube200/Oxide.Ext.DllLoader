@@ -18,11 +18,19 @@ namespace Oxide.Ext.DllLoader.Mapper
         private readonly ISet<AssemblyInfo> _assembliesInfo = new HashSet<AssemblyInfo>();
 
 
+        public void RemoveAssemblyInfo(AssemblyInfo assemblyInfo)
+        {
+            _assembliesInfo.Remove(assemblyInfo);
+        }
+
+
         #region AssemblyResolver
+
         public void OnModLoad()
         {
             AppDomain.CurrentDomain.AssemblyResolve += AssemblyResolve;
         }
+
         public void OnShutdown()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolve;
@@ -33,10 +41,12 @@ namespace Oxide.Ext.DllLoader.Mapper
         {
             return GetAssemblyByOriginalName(args.Name);
         }
+
         #endregion
 
 
         #region ScanDiretory
+
         public IEnumerable<string> ScanDirectoryPlugins(string directory)
         {
             ScanAndRegisterAssemblies(directory);
@@ -44,7 +54,8 @@ namespace Oxide.Ext.DllLoader.Mapper
 
             foreach (var assemblyInfo in _assembliesInfo)
             {
-                Interface.Oxide.LogDebug("Found {0} plugins for assembly({1}).", assemblyInfo.PluginsName.Count, assemblyInfo.OriginalName);
+                Interface.Oxide.LogDebug("Found {0} plugins for assembly({1}).", assemblyInfo.PluginsName.Count,
+                    assemblyInfo.OriginalName);
                 foreach (var pluginName in assemblyInfo.PluginsName)
                     yield return pluginName;
             }
@@ -82,17 +93,21 @@ namespace Oxide.Ext.DllLoader.Mapper
                     continue;
                 }
 
-                Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).", assemblyInfo.OriginalName, file.Name, directory);
+                Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).",
+                    assemblyInfo.OriginalName, file.Name, directory);
                 _assembliesInfo.Add(assemblyInfo);
             }
         }
+
         #endregion
 
 
         #region Getters
+
         public Assembly GetAssemblyByOriginalName(string originalName)
         {
-            var assemblyInfo = _assembliesInfo.FirstOrDefault(ai => ai.OriginalName.Equals(originalName, StringComparison.OrdinalIgnoreCase));
+            var assemblyInfo = _assembliesInfo.FirstOrDefault(ai =>
+                ai.OriginalName.Equals(originalName, StringComparison.OrdinalIgnoreCase));
             if (assemblyInfo == null)
                 return null;
 
@@ -110,14 +125,10 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         public PluginInfo GetPluginInfoByName(string pluginName)
         {
-            return _assembliesInfo.Select(assemblyInfo => assemblyInfo.GetPluginInfo(pluginName)).FirstOrDefault(pluginInfo => pluginInfo != null);
+            return _assembliesInfo.Select(assemblyInfo => assemblyInfo.GetPluginInfo(pluginName))
+                .FirstOrDefault(pluginInfo => pluginInfo != null);
         }
+
         #endregion
-
-
-        public void RemoveAssemblyInfo(AssemblyInfo assemblyInfo)
-        {
-            _assembliesInfo.Remove(assemblyInfo);
-        }
     }
 }
