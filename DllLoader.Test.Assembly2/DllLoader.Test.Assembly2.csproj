@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<OutputType>Library</OutputType>
+		<Version>1.0.1</Version>
+		<Authors>Rube200</Authors>
+		<Company>Rube200-Devs</Company>
+		<RepositoryType>Public</RepositoryType>
+		<RepositoryUrl>https://github.com/rube200/Oxide.Ext.DllLoader</RepositoryUrl>
+		<RootNamespace>DllLoader.Test.Assembly2</RootNamespace>
+		<AssemblyName>DllLoader.Test.Assembly2</AssemblyName>
+		<NoWarn>0649</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="Oxide.Core">
+			<HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Oxide.CSharp">
+			<HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Oxide.Rust">
+			<HintPath>..\Oxide.Libs\Oxide.Rust.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+</Project>
