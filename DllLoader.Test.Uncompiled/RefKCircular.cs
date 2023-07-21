@@ -7,20 +7,20 @@ namespace Oxide.Plugins
     public class RefKCircular : RustPlugin
     {
         [PluginReference]
-        Plugin RefICircular;
+        Plugin RefJCircular;
 
         void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefICircular != null}");
+            Puts($"Is Ref Loaded? {RefJCircular != null}");
         }
 
         void Loaded()
         {
-            Puts($"Is Ref Loaded? (again) {RefICircular != null}");
-            RefICircular?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            Puts($"Is Ref Loaded? (again) {RefJCircular != null}");
+            RefJCircular?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
         }
 
         private void CallRef(string callerMsg)
