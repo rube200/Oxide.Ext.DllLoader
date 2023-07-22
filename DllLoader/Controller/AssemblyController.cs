@@ -1,5 +1,6 @@
 ﻿#region
 
+using System;
 using System.IO;
 using System.Reflection;
 using Mono.Cecil;
@@ -14,11 +15,16 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public static class AssemblyController
     {
-        public static AssemblyInfo LoadAssemblyInfo(string filepath)
+        public static string GetAssemblyNameFromFile(string filepath)
+        {
+            return AssemblyDefinition.ReadAssembly(filepath).FullName;
+        }
+
+        public static AssemblyInfo LoadAssemblyInfo(string filepath, DateTime lastWriteUtc)
         {
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(filepath);
+            var assemblyInfo = new AssemblyInfo(assemblyDefinition.FullName, filepath, lastWriteUtc);
 
-            var assemblyInfo = new AssemblyInfo(assemblyDefinition.FullName, filepath);
             var modulePluginType = assemblyDefinition.MainModule.Import(typeof(Plugin)).Resolve();
             var pluginTypes = assemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
 
@@ -26,6 +32,7 @@ namespace Oxide.Ext.DllLoader.Controller
                 assemblyInfo.RegisterPluginName(pluginType.Name);
 
             return assemblyInfo;
+
         }
 
         public static bool LoadAssembly(AssemblyInfo assemblyInfo)
@@ -33,7 +40,7 @@ namespace Oxide.Ext.DllLoader.Controller
             Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
             if (!File.Exists(assemblyInfo.AssemblyFile))
             {
-                Interface.Oxide.LogWarning("Fail to load assembly({0}), file({1}) does not exist.",
+                Interface.Oxide.LogError("Fail to load assembly({0}), file({1}) does not exist.",
                     assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
                 return false;
             }
@@ -68,8 +75,12 @@ namespace Oxide.Ext.DllLoader.Controller
                 var symbolsData = new byte[fileStream.Length];
                 var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
                 if (count != symbolsData.Length)
-                    Interface.Oxide.LogWarning("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count,
+                {
+                    Interface.Oxide.LogDebug("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count,
                         symbolsData.Length);
+                    return null;
+                }
+
                 return symbolsData;
             }
         }

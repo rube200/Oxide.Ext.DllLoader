@@ -1,20 +1,22 @@
 ﻿#region
 
+using System;
+using System.Diagnostics;
+using System.Reflection;
 using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
+using Oxide.Plugins;
 
 #endregion
 
 namespace Oxide.Ext.DllLoader
 {
     // ReSharper disable once UnusedMember.Global
-    //todo implement last write check
     public sealed class DllLoaderExtension : Extension
     {
         private DllPluginLoaderController _pluginLoader;
-
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
         {
@@ -23,7 +25,7 @@ namespace Oxide.Ext.DllLoader
 
         public override string Name => "DllLoader";
         public override string Author => "Rube200";
-        public override VersionNumber Version => new VersionNumber(1, 1, 2);
+        public override VersionNumber Version => new VersionNumber(1, 2, 1);
         public FSWatcher Watcher { get; private set; }
 
         ~DllLoaderExtension()
@@ -35,7 +37,6 @@ namespace Oxide.Ext.DllLoader
         public override void Load()
         {
             Manager.RegisterPluginLoader(_pluginLoader);
-
             Interface.Oxide.OnFrame(OnFrame);
         }
 
@@ -45,6 +46,7 @@ namespace Oxide.Ext.DllLoader
             Manager.RegisterPluginChangeWatcher(Watcher);
 
             /*
+             todo improve
             var dllWatcher = new DllLoaderWatcher(pluginDirectory);
             _pluginsLoader.SetWatcher(dllWatcher);
 

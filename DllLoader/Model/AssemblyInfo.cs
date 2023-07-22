@@ -17,14 +17,15 @@ namespace Oxide.Ext.DllLoader.Model
         private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
         public readonly string AssemblyFile;
         public readonly string OriginalName;
-
+        public readonly DateTime LastWriteTimeUtc;
         private Assembly _assembly;
 
 
-        public AssemblyInfo(string originalName, string filePath)
+        public AssemblyInfo(string originalName, string filePath, DateTime lastWriteTimeUtc)
         {
             AssemblyFile = filePath;
             OriginalName = originalName;
+            LastWriteTimeUtc = lastWriteTimeUtc;
         }
 
 
@@ -38,7 +39,6 @@ namespace Oxide.Ext.DllLoader.Model
             }
         }
 
-        public string AssemblyName => Assembly?.FullName;
         public bool IsAssemblyLoaded => Assembly != null;
         public IReadOnlyCollection<PluginInfo> PluginsInfo => _pluginsInfo;
 

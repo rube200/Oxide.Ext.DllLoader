@@ -2,14 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Mapper;
 using Oxide.Ext.DllLoader.Model;
 using Oxide.Plugins;
-using ExtensionMethods = Oxide.Core.ExtensionMethods;
 
 #endregion
 
@@ -17,6 +15,7 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public sealed class DllPluginLoaderController : PluginLoader
     {
+        //todo implement last write check
         private DllLoaderExtension _extension;
 
         private DllLoaderMapper _mapper;
@@ -75,7 +74,7 @@ namespace Oxide.Ext.DllLoader.Controller
                 var assemblyInfo = _mapper.GetAssemblyInfoByPluginName(name);
                 if (assemblyInfo == null)
                 {
-                    Interface.Oxide.LogDebug("Fail to find assembly info for plugin({0}).", name);
+                    Interface.Oxide.LogError("Fail to find assembly info for plugin({0}).", name);
                     return null;
                 }
 
@@ -84,18 +83,18 @@ namespace Oxide.Ext.DllLoader.Controller
 
                 if (!assemblyInfo.IsAssemblyLoaded && !AssemblyController.LoadAssembly(assemblyInfo))
                 {
-                    Interface.Oxide.LogDebug(
+                    Interface.Oxide.LogError(
                         "Fail to load plugin({0}), assembly({1}) and assembly file({2}) not found.", name,
                         assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
                     LoadingPlugins.Remove(name);
-                    _mapper.RemoveAssemblyInfo(assemblyInfo);
+                    _mapper.RemoveAssemblyInfo(assemblyInfo.OriginalName);
                     return null;
                 }
 
                 var pluginInfo = assemblyInfo.GetPluginInfo(name);
                 if (pluginInfo == null)
                 {
-                    Interface.Oxide.LogDebug("Fail to find plugin({0}) in assembly({1}).", name,
+                    Interface.Oxide.LogError("Fail to find plugin({0}) in assembly({1}).", name,
                         assemblyInfo.OriginalName);
                     LoadingPlugins.Remove(name);
                     return null;
@@ -122,46 +121,13 @@ namespace Oxide.Ext.DllLoader.Controller
         private void Load(PluginInfo pluginInfo)
         {
             Interface.Oxide.LogDebug("Loading plugin({0}).", pluginInfo.PluginName);
-            var loadedLoadingRef =
-                pluginInfo.ReferencedPlugins.Where(pr => LoadedPlugins.ContainsKey(pr) && LoadingPlugins.Contains(pr));
-            foreach (var pluginRef in loadedLoadingRef)
-                Interface.Oxide.UnloadPlugin(pluginRef);
 
-            var missingRef = pluginInfo.ReferencedPlugins.Where(rf => !LoadedPlugins.ContainsKey(rf)).ToArray();
-            if (missingRef.Any())
-            {
-                var waitingRef = pluginInfo.ReferencedPlugins.Where(rf => LoadingPlugins.Contains(rf)).ToArray();
-                if (waitingRef.Any())
-                {
-                    Interface.Oxide.LogDebug("Plugin({0}) is waiting for references to be loaded: {1}",
-                        pluginInfo.PluginName, ExtensionMethods.ToSentence(waitingRef));
-                    return;
-                }
+            Interface.Oxide.UnloadPlugin(pluginInfo.PluginName);
+            pluginInfo.Plugin = InstantiatePlugin(pluginInfo);
 
-                var missingReqString = ExtensionMethods.ToSentence(missingRef);
-                Interface.Oxide.LogError("Plugin({0}) references are missing: {1}", pluginInfo.PluginName,
-                    missingReqString);
-                PluginErrors[pluginInfo.PluginName] = $"Missing dependencies: {missingReqString}";
-            }
-            else
-            {
-                Interface.Oxide.UnloadPlugin(pluginInfo.PluginName);
-                pluginInfo.Plugin = InstantiatePlugin(pluginInfo);
-
-                if (pluginInfo.IsPluginLoaded)
-                    LoadedPlugins[pluginInfo.PluginName] = pluginInfo.Plugin;
-            }
-
+            if (pluginInfo.IsPluginLoaded)
+                LoadedPlugins[pluginInfo.PluginName] = pluginInfo.Plugin;
             LoadingPlugins.Remove(pluginInfo.PluginName);
-            foreach (var loadingName in LoadingPlugins.ToArray())
-            {
-                var plInfo = _mapper.GetPluginInfoByName(loadingName);
-                if (plInfo == null || plInfo.IsPluginLoaded ||
-                    !plInfo.ReferencedPlugins.Contains(pluginInfo.PluginName))
-                    continue;
-
-                Load(plInfo);
-            }
         }
 
         private Plugin InstantiatePlugin(PluginInfo pluginInfo)
@@ -187,7 +153,7 @@ namespace Oxide.Ext.DllLoader.Controller
 
             if (plugin == null)
             {
-                Interface.Oxide.LogWarning("Plugin({0}) failed to load.", pluginInfo.PluginName);
+                Interface.Oxide.LogError("Plugin({0}) failed to load.", pluginInfo.PluginName);
                 return null;
             }
 
@@ -222,10 +188,17 @@ namespace Oxide.Ext.DllLoader.Controller
             return plugin;
         }
 
+        public override void Reload(string directory, string name)
+        {
+            base.Reload(directory, name);
+            //todo update
+            Interface.Oxide.LogDebug("public override void Reload({0}/{1})", directory, name);
+        }
+
         public override void Unloading(Plugin plugin)
         {
-            //check dependencies
-            //todo add debug
+            //todo update
+            Interface.Oxide.LogDebug("public override void Unloading({0})", plugin.Name);
             LoadedPlugins.Remove(plugin.Name);
         }
     }
