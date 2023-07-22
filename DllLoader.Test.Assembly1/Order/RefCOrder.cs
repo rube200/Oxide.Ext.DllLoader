@@ -1,4 +1,8 @@
+#region
+
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Plugins
 {
@@ -6,21 +10,19 @@ namespace Oxide.Plugins
     [Description("RefCOrder is for testing")]
     public class RefCOrder : RustPlugin
     {
-        [PluginReference]
-        Plugin RefBOrder;
+        [PluginReference] private Plugin RefBOrder;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefBOrder != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefBOrder != null}");
-            RefBOrder?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefBOrder != null}");
+                RefBOrder?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

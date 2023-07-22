@@ -15,12 +15,11 @@ namespace Oxide.Plugins
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefZCross != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefZCross != null}");
-            RefZCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefZCross != null}");
+                RefZCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

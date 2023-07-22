@@ -1,4 +1,8 @@
+#region
+
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Plugins
 {
@@ -6,21 +10,19 @@ namespace Oxide.Plugins
     [Description("RefSDeep is for testing")]
     public class RefSDeep : RustPlugin
     {
-        [PluginReference]
-        Plugin RefTDeep;
+        [PluginReference] private Plugin RefTDeep;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefTDeep != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefTDeep != null}");
-            RefTDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefTDeep != null}");
+                RefTDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

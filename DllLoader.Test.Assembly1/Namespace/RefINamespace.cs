@@ -1,6 +1,9 @@
-using Oxide.Core.Libraries;
+#region
+
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
+
+#endregion
 
 namespace Test.Namespace
 {
@@ -8,21 +11,19 @@ namespace Test.Namespace
     [Description("RefINamespace is for testing")]
     public class RefINamespace : RustPlugin
     {
-        [PluginReference]
-        Plugin RefHNamespace;
+        [PluginReference] private Plugin RefHNamespace;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefHNamespace != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefHNamespace != null}");
-            RefHNamespace?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefHNamespace != null}");
+                RefHNamespace?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

@@ -1,5 +1,9 @@
+#region
+
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
+
+#endregion
 
 namespace Test.Naming
 {
@@ -7,21 +11,19 @@ namespace Test.Naming
     [Description("RefDNaming is for testing")]
     public class RefDNaming : RustPlugin
     {
-        [PluginReference("RefENaming")]
-        Plugin plugin;
+        [PluginReference("RefENaming")] private Plugin plugin;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {plugin != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {plugin != null}");
-            plugin?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {plugin != null}");
+                plugin?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

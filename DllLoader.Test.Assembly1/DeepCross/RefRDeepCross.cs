@@ -1,5 +1,8 @@
-using Oxide.Core.Libraries;
+#region
+
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Plugins
 {
@@ -7,21 +10,19 @@ namespace Oxide.Plugins
     [Description("RefRDeepCross is for testing")]
     public class RefRDeepCross : RustPlugin
     {
-        [PluginReference]
-        Plugin RefQDeepCross;
+        [PluginReference] private Plugin RefQDeepCross;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefQDeepCross != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefQDeepCross != null}");
-            RefQDeepCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefQDeepCross != null}");
+                RefQDeepCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

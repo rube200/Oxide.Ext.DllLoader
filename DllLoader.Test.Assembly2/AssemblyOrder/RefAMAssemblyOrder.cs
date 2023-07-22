@@ -1,4 +1,8 @@
+#region
+
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Plugins
 {
@@ -6,21 +10,19 @@ namespace Oxide.Plugins
     [Description("RefAMAssemblyOrder is for testing")]
     public class RefAMAssemblyOrder : RustPlugin
     {
-        [PluginReference]
-        Plugin RefALAssemblyOrder;
+        [PluginReference] private Plugin RefALAssemblyOrder;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefALAssemblyOrder != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefALAssemblyOrder != null}");
-            RefALAssemblyOrder?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefALAssemblyOrder != null}");
+                RefALAssemblyOrder?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)

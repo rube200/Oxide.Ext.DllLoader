@@ -1,4 +1,8 @@
+#region
+
 using Oxide.Core.Plugins;
+
+#endregion
 
 namespace Oxide.Plugins
 {
@@ -6,21 +10,19 @@ namespace Oxide.Plugins
     [Description("RefARAssemblyDeep is for testing")]
     public class RefARAssemblyDeep : RustPlugin
     {
-        [PluginReference]
-        Plugin RefASAssemblyDeep;
+        [PluginReference] private Plugin RefASAssemblyDeep;
 
-        void Init()
+        private void Init()
         {
             var selfName = GetType().Name;
 
             Puts($"I am alive {selfName}");
             Puts($"Is Ref Loaded? {RefASAssemblyDeep != null}");
-        }
-
-        void Loaded()
-        {
-            Puts($"Is Ref Loaded? (again) {RefASAssemblyDeep != null}");
-            RefASAssemblyDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            timer.Once(3f, () =>
+            {
+                Puts($"Is Ref Loaded? (again) {RefASAssemblyDeep != null}");
+                RefASAssemblyDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
+            });
         }
 
         private void CallRef(string callerMsg)
