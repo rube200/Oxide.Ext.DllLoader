@@ -32,7 +32,6 @@ namespace Oxide.Ext.DllLoader.Controller
                 assemblyInfo.RegisterPluginName(pluginType.Name);
 
             return assemblyInfo;
-
         }
 
         public static bool LoadAssembly(AssemblyInfo assemblyInfo)

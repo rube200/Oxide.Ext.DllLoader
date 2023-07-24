@@ -1,9 +1,6 @@
 ﻿#region
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
@@ -49,7 +46,16 @@ namespace Oxide.Ext.DllLoader
         public override void LoadPluginWatchers(string pluginDirectory)
         {
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
-            _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader._mapper);
+            try
+            {
+                _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader._mapper);
+            }
+            catch (Exception ex)
+            {
+                Interface.Oxide.LogException("Fail to file watcher, it will not work properly", ex);
+                return;
+            }
+
             Manager.RegisterPluginChangeWatcher(Watcher);
         }
 
@@ -66,6 +72,9 @@ namespace Oxide.Ext.DllLoader
 
         private void OnFrame(float delta)
         {
+            if (_pluginLoader == null)
+                return;
+
             foreach (var plugin in _pluginLoader.OnFramePlugins)
                 plugin.CallHook("OnFrame", new[] { delta });
         }

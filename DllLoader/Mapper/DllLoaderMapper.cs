@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Xml.Linq;
 using Oxide.Core;
 using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Controller;
@@ -17,7 +16,13 @@ namespace Oxide.Ext.DllLoader.Mapper
 {
     public sealed class DllLoaderMapper : IDllLoaderMapper
     {
-        private readonly IDictionary<string, AssemblyInfo> _assembliesInfo = new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly IDictionary<string, AssemblyInfo> _assembliesInfo =
+            new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
+
+        public void RemoveAssemblyInfo(string assemblyName)
+        {
+            _assembliesInfo.Remove(assemblyName);
+        }
 
 
         #region AssemblyResolver
@@ -89,7 +94,8 @@ namespace Oxide.Ext.DllLoader.Mapper
                         continue;
                     }
 
-                    Interface.Oxide.LogDebug("Assembly({0}) already registered, but need to be reloaded.", file.FullName);
+                    Interface.Oxide.LogDebug("Assembly({0}) already registered, but need to be reloaded.",
+                        file.FullName);
                 }
 
                 assemblyInfo = AssemblyController.LoadAssemblyInfo(file.FullName, file.LastWriteTimeUtc);
@@ -100,7 +106,8 @@ namespace Oxide.Ext.DllLoader.Mapper
                 }
 
 
-                Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).", assemblyInfo.OriginalName, file.Name, directory);
+                Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).",
+                    assemblyInfo.OriginalName, file.Name, directory);
                 _assembliesInfo[assemblyName] = assemblyInfo;
             }
         }
@@ -114,7 +121,7 @@ namespace Oxide.Ext.DllLoader.Mapper
         {
             if (_assembliesInfo.TryGetValue(name, out var assemblyInfo))
                 return assemblyInfo;
-            
+
             return null;
         }
 
@@ -135,10 +142,5 @@ namespace Oxide.Ext.DllLoader.Mapper
         }
 
         #endregion
-
-        public void RemoveAssemblyInfo(string assemblyName)
-        {
-            _assembliesInfo.Remove(assemblyName);
-        }
     }
 }

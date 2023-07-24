@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿#region
+
+using System.Collections.Generic;
 using Oxide.Ext.DllLoader.Model;
+
+#endregion
 
 namespace Oxide.Ext.DllLoader.API
 {
