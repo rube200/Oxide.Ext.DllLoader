@@ -17,8 +17,8 @@ namespace Oxide.Ext.DllLoader.Model
         private readonly HashSet<string> _expectedPluginsName = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
         public readonly string AssemblyFile;
-        public readonly string OriginalName;
         public readonly DateTime LastWriteTimeUtc;
+        public readonly string OriginalName;
         private Assembly _assembly;
 
 
