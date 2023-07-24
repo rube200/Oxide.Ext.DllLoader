@@ -17,8 +17,7 @@ namespace Oxide.Ext.DllLoader.Controller
     {
         //todo implement last write check
         private DllLoaderExtension _extension;
-
-        private DllLoaderMapper _mapper;
+        internal DllLoaderMapper _mapper;
         internal List<Plugin> OnFramePlugins = new List<Plugin>();
 
 
