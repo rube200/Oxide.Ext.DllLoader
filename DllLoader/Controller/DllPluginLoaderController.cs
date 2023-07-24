@@ -15,7 +15,6 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public sealed class DllPluginLoaderController : PluginLoader
     {
-        //todo implement last write check
         private DllLoaderExtension _extension;
         internal DllLoaderMapper _mapper;
         internal List<Plugin> OnFramePlugins = new List<Plugin>();
@@ -187,17 +186,8 @@ namespace Oxide.Ext.DllLoader.Controller
             return plugin;
         }
 
-        public override void Reload(string directory, string name)
-        {
-            base.Reload(directory, name);
-            //todo update
-            Interface.Oxide.LogDebug("public override void Reload({0}/{1})", directory, name);
-        }
-
         public override void Unloading(Plugin plugin)
         {
-            //todo update
-            Interface.Oxide.LogDebug("public override void Unloading({0})", plugin.Name);
             LoadedPlugins.Remove(plugin.Name);
         }
     }
