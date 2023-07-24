@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Oxide.Core;
+using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Model;
 
@@ -13,7 +14,7 @@ using Oxide.Ext.DllLoader.Model;
 
 namespace Oxide.Ext.DllLoader.Mapper
 {
-    public sealed class DllLoaderMapper
+    public sealed class DllLoaderMapper : IDllLoaderMapper
     {
         private readonly IDictionary<string, AssemblyInfo> _assembliesInfo = new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -33,7 +34,15 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         private Assembly AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            return GetAssemblyByOriginalName(args.Name);
+            var assemblyInfo = GetAssemblyInfoByName(args.Name);
+            if (assemblyInfo == null)
+                return null;
+
+            if (assemblyInfo.IsAssemblyLoaded || AssemblyController.LoadAssembly(assemblyInfo))
+                return assemblyInfo.Assembly;
+
+            RemoveAssemblyInfo(args.Name);
+            return null;
         }
 
         #endregion
@@ -100,15 +109,11 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         #region Getters
 
-        public Assembly GetAssemblyByOriginalName(string originalName)
+        public AssemblyInfo GetAssemblyInfoByName(string name)
         {
-            if (!_assembliesInfo.TryGetValue(originalName, out var assemblyInfo))
-                return null;
-  
-            if (assemblyInfo.IsAssemblyLoaded || AssemblyController.LoadAssembly(assemblyInfo))
-                return assemblyInfo.Assembly;
-
-            RemoveAssemblyInfo(originalName);
+            if (_assembliesInfo.TryGetValue(name, out var assemblyInfo))
+                return assemblyInfo;
+            
             return null;
         }
 
