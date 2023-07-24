@@ -9,6 +9,8 @@ namespace Oxide.Ext.DllLoader.API
 
         AssemblyInfo GetAssemblyInfoByName(string name);
 
+        AssemblyInfo GetAssemblyInfoByFile(string name);
+
         AssemblyInfo GetAssemblyInfoByPluginName(string name);
 
         PluginInfo GetPluginInfoByName(string pluginName);

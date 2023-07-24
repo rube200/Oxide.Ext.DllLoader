@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Linq;
 using Oxide.Core;
 using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Controller;
@@ -115,6 +116,11 @@ namespace Oxide.Ext.DllLoader.Mapper
                 return assemblyInfo;
             
             return null;
+        }
+
+        public AssemblyInfo GetAssemblyInfoByFile(string filename)
+        {
+            return _assembliesInfo.Values.FirstOrDefault(assemblyInfo => assemblyInfo.IsFile(filename));
         }
 
         public AssemblyInfo GetAssemblyInfoByPluginName(string name)

@@ -1,13 +1,14 @@
 ﻿#region
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
-using Oxide.Plugins;
+using Oxide.Ext.DllLoader.Watcher;
 
 #endregion
 
@@ -17,6 +18,10 @@ namespace Oxide.Ext.DllLoader
     public sealed class DllLoaderExtension : Extension
     {
         private DllPluginLoaderController _pluginLoader;
+#pragma warning disable IDE0052
+        // ReSharper disable once NotAccessedField.Local
+        private DllLoaderWatcherFix _watcherFix; //Need to make GC not collect it when it shouldn't
+#pragma warning restore IDE0052
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
         {
@@ -30,6 +35,7 @@ namespace Oxide.Ext.DllLoader
 
         ~DllLoaderExtension()
         {
+            _watcherFix = null;
             _pluginLoader = null;
         }
 
@@ -43,15 +49,8 @@ namespace Oxide.Ext.DllLoader
         public override void LoadPluginWatchers(string pluginDirectory)
         {
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
+            _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader._mapper);
             Manager.RegisterPluginChangeWatcher(Watcher);
-
-            /*
-             todo improve
-            var dllWatcher = new DllLoaderWatcher(pluginDirectory);
-            _pluginsLoader.SetWatcher(dllWatcher);
-
-
-            Manager.RegisterPluginChangeWatcher(dllWatcher.Watcher);*/
         }
 
 

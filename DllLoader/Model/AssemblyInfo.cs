@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Oxide.Core.Plugins;
@@ -105,6 +106,18 @@ namespace Oxide.Ext.DllLoader.Model
         public override int GetHashCode()
         {
             return OriginalName != null ? OriginalName.GetHashCode() : 0;
+        }
+
+        public bool IsFile(string filename)
+        {
+            if (AssemblyFile.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var file = Path.GetFileNameWithoutExtension(AssemblyFile);
+            if (file.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
         }
     }
 }
