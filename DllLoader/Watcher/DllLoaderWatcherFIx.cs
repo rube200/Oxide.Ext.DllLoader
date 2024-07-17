@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Harmony;
+using HarmonyLib;
 using Oxide.Core;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.API;
@@ -19,12 +19,12 @@ namespace Oxide.Ext.DllLoader.Watcher
         private static readonly IDictionary<PluginChangeWatcher, IDllLoaderMapper> _fsWatcherMappers =
             new Dictionary<PluginChangeWatcher, IDllLoaderMapper>();
 
-        private HarmonyInstance _harmonyInstance;
+        private Harmony _harmonyInstance;
         private FSWatcher _watcher;
 
         public DllLoaderWatcherFix(string name, FSWatcher fsWatcher, IDllLoaderMapper dllMapper)
         {
-            _harmonyInstance = HarmonyInstance.Create(name);
+            _harmonyInstance = new Harmony(name);
 
             //Plugin add/remove to/from watcher
             _harmonyInstance.Patch(WatcherAddMappingInfo, WatcherAddMappingPatchInfo);

@@ -43,7 +43,7 @@ namespace Oxide.Ext.DllLoader.Helper
                 var pluginTypes = assemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
 
                 foreach (var pluginType in pluginTypes)
-                    _ = new DirectCallMethod(assemblyDefinition.MainModule, pluginType /*, new ReaderParameters()*/);
+                    _ = new DirectCallMethod(assemblyDefinition.MainModule, pluginType, new ReaderParameters());
 
                 Interface.Oxide.LogDebug("Patch oxide complete.");
             }
