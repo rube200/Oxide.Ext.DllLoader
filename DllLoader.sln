@@ -9,7 +9,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllLoader.Test.Assembly1", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllLoader.Test.Assembly2", "DllLoader.Test.Assembly2\DllLoader.Test.Assembly2.csproj", "{EA5D6D9E-C22B-4D0B-B541-03F6DC46F8E0}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Itens de Solução", "Itens de Solução", "{B024A7E9-275A-43AA-9F3F-B71C1BE76C66}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Oxide.Libs", "Oxide.Libs", "{017A6006-608F-4009-B88D-38866E233C69}"
+	ProjectSection(SolutionItems) = preProject
+		Oxide.Libs\Oxide.Core.dll = Oxide.Libs\Oxide.Core.dll
+		Oxide.Libs\Oxide.CSharp.dll = Oxide.Libs\Oxide.CSharp.dll
+		Oxide.Libs\Oxide.References.dll = Oxide.Libs\Oxide.References.dll
+		Oxide.Libs\Oxide.Rust.dll = Oxide.Libs\Oxide.Rust.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DllLoader.Test.Uncompiled", "DllLoader.Test.Uncompiled", "{1B314364-A649-4E85-829F-CA7A99F1553A}"
 	ProjectSection(SolutionItems) = preProject
 		DllLoader.Test.Uncompiled\RefAACross.cs = DllLoader.Test.Uncompiled\RefAACross.cs
 		DllLoader.Test.Uncompiled\RefADCircularCross.cs = DllLoader.Test.Uncompiled\RefADCircularCross.cs
