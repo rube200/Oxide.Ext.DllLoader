@@ -1,0 +1,62 @@
+name: Github Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release SemVer:'
+        required: true
+      update_notes:
+        default: "-"
+        description: "Update Notes to Release"
+        required: true
+        
+jobs:
+  build_and_release:
+    name: "Build and Release"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [linux-x64, win-x64]
+    env: 
+      build_output_dir: DllLoader/bin/Release/net48/${{ matrix.runtime }}
+      release_artifact_name: DllLoader-${{ matrix.runtime }}.zip
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@master
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@master
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore DllLoader --runtime ${{ matrix.runtime }}
+
+    - name: Update version
+      run: "sed -i \"s#<Version>0.0.0</Version>#<Version>${{ github.event.inputs.version }}</Version>#\" DllLoader/DllLoader.csproj"  
+
+    - name: Build Project
+      run: dotnet build DllLoader --configuration Release --no-restore --runtime ${{ matrix.runtime }}
+
+    - name: Install zip
+      run: sudo apt-get install -y zip
+
+    - name: Zip Artifact
+      run: cd ${{ env.build_output_dir }} && zip -q -r ./${{ env.release_artifact_name }} *
+
+    - name: Release
+      uses: softprops/action-gh-release@master
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_PRE_RELEASE: ${{ endsWith(github.event.inputs.version, '-alpha') || endsWith(github.event.inputs.version, '-beta') || endsWith(github.event.inputs.version, '-rc') }}
+      with:
+        body: |
+          Notes:
+            ${{ github.event.inputs.update_notes }}
+        files: ${{ env.build_output_dir }}/${{ env.release_artifact_name }}
+        name: Oxide.Ext.DllLoader v${{ github.event.inputs.version }}
+        prerelease: ${{ env.IS_PRE_RELEASE }}
+        tag_name: V${{ github.event.inputs.version }}
