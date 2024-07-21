@@ -1,33 +1,45 @@
-#region
-
 using Oxide.Core.Plugins;
-
-#endregion
 
 namespace Oxide.Plugins
 {
     [Info("RefAMAssemblyOrder", "Rube200", "1.0.0")]
     [Description("RefAMAssemblyOrder is for testing")]
-    public class RefAMAssemblyOrder : RustPlugin
+    public class RefAMAssemblyOrder : DepTestPlugin
     {
-        [PluginReference] private Plugin RefALAssemblyOrder;
+        [PluginReference]
+        Plugin RefALAssemblyOrder;
 
-        private void Init()
+        protected override Plugin DepPlugin => RefALAssemblyOrder;
+        protected override string PuginName => nameof(RefALAssemblyOrder);
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefALAssemblyOrder != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefALAssemblyOrder != null}");
-                RefALAssemblyOrder?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }

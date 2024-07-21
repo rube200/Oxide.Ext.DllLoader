@@ -1,33 +1,45 @@
-#region
-
 using Oxide.Core.Plugins;
-
-#endregion
 
 namespace Oxide.Plugins
 {
     [Info("RefAOAssemblyDeep", "Rube200", "1.0.0")]
     [Description("RefAOAssemblyDeep is for testing")]
-    public class RefAOAssemblyDeep : RustPlugin
+    public class RefAOAssemblyDeep : DepTestPlugin
     {
-        [PluginReference] private Plugin RefAPAssemblyDeep;
+        [PluginReference]
+        Plugin RefAPAssemblyDeep;
 
-        private void Init()
+        protected override Plugin DepPlugin => RefAPAssemblyDeep;
+        protected override string PuginName => nameof(RefAPAssemblyDeep);
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefAPAssemblyDeep != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefAPAssemblyDeep != null}");
-                RefAPAssemblyDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }
