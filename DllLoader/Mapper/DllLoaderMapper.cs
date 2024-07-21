@@ -59,16 +59,22 @@ namespace Oxide.Ext.DllLoader.Mapper
         public IEnumerable<string> ScanDirectoryPlugins(string directory)
         {
             ScanAndRegisterAssemblies(directory);
+#if DEBUG
             Interface.Oxide.LogDebug("Total assemblies registered({0}).", _assembliesInfo.Count);
+#endif
 
             var plugins = _assembliesInfo.Values.SelectMany(ai => ai.PluginsName).ToArray();
+#if DEBUG
             Interface.Oxide.LogDebug("Total plugins registered({0}).", plugins.Length);
+#endif
             return plugins;
         }
 
         private void ScanAndRegisterAssemblies(string directory)
         {
+#if DEBUG
             Interface.Oxide.LogDebug("Scanning directory({0}) for assemblies...", directory);
+#endif
             if (!Directory.Exists(directory))
             {
                 Interface.Oxide.LogWarning("Fail to scan directory({0}), directory not found.", directory);
@@ -78,7 +84,9 @@ namespace Oxide.Ext.DllLoader.Mapper
             var dirFiles = new DirectoryInfo(directory).GetFiles("*.dll", SearchOption.TopDirectoryOnly);
             foreach (var file in dirFiles)
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Found file({0}) in directory({1}).", file.Name, directory);
+#endif
                 if ((file.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
                 {
                     Interface.Oxide.LogInfo("Ignoring file({0}), marked as hidden.", file.Name);
@@ -90,12 +98,16 @@ namespace Oxide.Ext.DllLoader.Mapper
                 {
                     if (assemblyInfo.LastWriteTimeUtc >= file.LastWriteTimeUtc)
                     {
+#if DEBUG
                         Interface.Oxide.LogDebug("Assembly({0}) already registered.", file.FullName);
+#endif
                         continue;
                     }
 
+#if DEBUG
                     Interface.Oxide.LogDebug("Assembly({0}) already registered, but need to be reloaded.",
                         file.FullName);
+#endif
                 }
 
                 assemblyInfo = AssemblyController.LoadAssemblyInfo(file.FullName, file.LastWriteTimeUtc);
@@ -105,9 +117,10 @@ namespace Oxide.Ext.DllLoader.Mapper
                     continue;
                 }
 
-
+#if DEBUG
                 Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).",
                     assemblyInfo.OriginalName, file.Name, directory);
+#endif
                 _assembliesInfo[assemblyName] = assemblyInfo;
             }
         }

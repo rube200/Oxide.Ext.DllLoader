@@ -36,7 +36,9 @@ namespace Oxide.Ext.DllLoader.Controller
 
         public static bool LoadAssembly(AssemblyInfo assemblyInfo)
         {
+#if DEBUG
             Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
+#endif
             if (!File.Exists(assemblyInfo.AssemblyFile))
             {
                 Interface.Oxide.LogError("Fail to load assembly({0}), file({1}) does not exist.",
@@ -61,11 +63,15 @@ namespace Oxide.Ext.DllLoader.Controller
         private static byte[] GetAssemblySymbols(string filepath)
         {
             filepath = Path.ChangeExtension(filepath, ".pdb");
+#if DEBUG
             Interface.Oxide.LogDebug("Getting debug symbols from file({0})", filepath);
+#endif
 
             if (!File.Exists(filepath))
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Fail to get debug symbols, file({0}) do not exist.", filepath);
+#endif
                 return null;
             }
 
@@ -75,8 +81,10 @@ namespace Oxide.Ext.DllLoader.Controller
                 var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
                 if (count != symbolsData.Length)
                 {
+#if DEBUG
                     Interface.Oxide.LogDebug("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count,
                         symbolsData.Length);
+#endif
                     return null;
                 }
 

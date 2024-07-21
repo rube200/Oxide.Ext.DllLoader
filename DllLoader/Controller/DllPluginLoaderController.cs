@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Xml.Linq;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Mapper;
@@ -70,13 +69,17 @@ namespace Oxide.Ext.DllLoader.Controller
         }
         public override Plugin Load(string directory, string name)
         {
+#if DEBUG
             Interface.Oxide.LogDebug("Loading requested to plugin({0}).", name);
+#endif
             if (!CanPluginLoad(name))
                 return null;
 
             try
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Getting assembly info for plugin({0}).", name);
+#endif
                 var assemblyInfo = _mapper.GetAssemblyInfoByPluginName(name);
                 if (assemblyInfo == null)
                 {
@@ -84,7 +87,9 @@ namespace Oxide.Ext.DllLoader.Controller
                     return null;
                 }
 
+#if DEBUG
                 Interface.Oxide.LogDebug("Plugin({0}) assembly({1}) info found.", name, assemblyInfo.OriginalName);
+#endif
                 LoadingPlugins.Add(name);
 
                 if (!assemblyInfo.IsAssemblyLoaded && !AssemblyController.LoadAssembly(assemblyInfo))
@@ -120,7 +125,9 @@ namespace Oxide.Ext.DllLoader.Controller
             {
                 LoadingPlugins.Remove(name);
                 PluginErrors[name] = $"Fail to load plugin({name}): {ex}";
+#if DEBUG
                 Interface.Oxide.LogDebug("Exception while loading plugin({0}): {1}", name, ex);
+#endif
                 return null;
             }
         }
@@ -129,7 +136,9 @@ namespace Oxide.Ext.DllLoader.Controller
         {
             try
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Loading plugin({0}).", pluginInfo.PluginName);
+#endif
                 Interface.Oxide.UnloadPlugin(pluginInfo.PluginName);
                 pluginInfo.Plugin = InstantiatePlugin(pluginInfo);
 
@@ -139,7 +148,9 @@ namespace Oxide.Ext.DllLoader.Controller
             catch (Exception ex)
             {
                 PluginErrors[pluginName] = $"Fail to load plugin({pluginInfo.PluginName}): {ex}";
+#if DEBUG
                 Interface.Oxide.LogDebug("Exception while loading plugin({0}) from pluginInfo: {1}", pluginInfo.PluginName, ex);
+#endif
             }
             finally
             {

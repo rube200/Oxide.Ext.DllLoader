@@ -117,7 +117,9 @@ namespace Oxide.Ext.DllLoader.Watcher
         {
             if (!_fsWatcherMappers.TryGetValue(__instance, out var mapper))
             {
-                Interface.Oxide.LogDebug("No corresponding watcher found, ignoring...");
+#if DEBUG
+                Interface.Oxide.LogDebug("No corresponding watcher found({0}), ignoring...", pluginName);
+#endif
                 return true;
             }
 

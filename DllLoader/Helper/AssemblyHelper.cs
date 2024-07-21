@@ -18,37 +18,50 @@ namespace Oxide.Ext.DllLoader.Helper
         public static void ApplyPatches(this AssemblyDefinition assemblyDefinition, bool name = true, bool oxide = true)
         {
             var originalName = assemblyDefinition.Name.Name;
+#if DEBUG
             Interface.Oxide.LogDebug("Patching assembly({0})...", originalName);
+#endif
 
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (!name && !oxide)
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Not patches to apply to assembly({0})", originalName);
+#endif
                 return;
             }
 
             if (name)
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Patching assembly name...");
+#endif
                 assemblyDefinition.Name.Name = $"{assemblyDefinition.Name.Name}-{DateTime.UtcNow.Ticks}";
+#if DEBUG
                 Interface.Oxide.LogDebug("Patch name complete. New name({0}) | old name({1}).", originalName,
                     assemblyDefinition.Name.Name);
+#endif
             }
 
             if (oxide)
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Patching assembly oxide...");
-
+#endif
                 var modulePluginType = assemblyDefinition.MainModule.Import(typeof(Plugin)).Resolve();
                 var pluginTypes = assemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
 
                 foreach (var pluginType in pluginTypes)
                     _ = new DirectCallMethod(assemblyDefinition.MainModule, pluginType, new ReaderParameters());
 
+#if DEBUG
                 Interface.Oxide.LogDebug("Patch oxide complete.");
+#endif
             }
 
+#if DEBUG
             Interface.Oxide.LogDebug("All patches to assembly({0}) are completed.", originalName);
+#endif
         }
 
         public static IEnumerable<Type> GetDefinedTypes(this Assembly assembly)
