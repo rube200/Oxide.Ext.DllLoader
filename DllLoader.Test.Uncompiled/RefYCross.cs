@@ -4,27 +4,42 @@ namespace Oxide.Plugins
 {
     [Info("RefYCross", "Rube200", "1.0.0")]
     [Description("RefYCross is for testing")]
-    public class RefYCross : RustPlugin
+    public class RefYCross : DepTestPlugin
     {
         [PluginReference]
         Plugin RefZCross;
 
-        void Init()
-        {
-            var selfName = GetType().Name;
+        protected override Plugin DepPlugin => RefZCross;
+        protected override string PuginName => nameof(RefZCross);
 
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefZCross != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefZCross != null}");
-                RefZCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+        protected override void Init()
+        {
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }

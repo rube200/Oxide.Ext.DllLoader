@@ -4,27 +4,42 @@ namespace Oxide.Plugins
 {
     [Info("RefQDeepCross", "Rube200", "1.0.0")]
     [Description("RefQDeepCross is for testing")]
-    public class RefQDeepCross : RustPlugin
+    public class RefQDeepCross : DepTestPlugin
     {
         [PluginReference]
         Plugin RefPDeepCross;
 
-        void Init()
-        {
-            var selfName = GetType().Name;
+        protected override Plugin DepPlugin => RefPDeepCross;
+        protected override string PuginName => nameof(RefPDeepCross);
 
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefPDeepCross != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefPDeepCross != null}");
-                RefPDeepCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+        protected override void Init()
+        {
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }

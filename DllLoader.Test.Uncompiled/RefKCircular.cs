@@ -4,27 +4,42 @@ namespace Oxide.Plugins
 {
     [Info("RefKCircular", "Rube200", "1.0.0")]
     [Description("RefKCircular is for testing")]
-    public class RefKCircular : RustPlugin
+    public class RefKCircular : DepTestPlugin
     {
         [PluginReference]
         Plugin RefJCircular;
 
-        void Init()
-        {
-            var selfName = GetType().Name;
+        protected override Plugin DepPlugin => RefJCircular;
+        protected override string PuginName => nameof(RefJCircular);
 
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefJCircular != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefJCircular != null}");
-                RefJCircular?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+        protected override void Init()
+        {
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }

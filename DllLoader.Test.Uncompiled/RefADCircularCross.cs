@@ -4,27 +4,42 @@ namespace Oxide.Plugins
 {
     [Info("RefADCircularCross", "Rube200", "1.0.0")]
     [Description("RefADCircularCross is for testing")]
-    public class RefADCircularCross : RustPlugin
+    public class RefADCircularCross : DepTestPlugin
     {
         [PluginReference]
         Plugin RefACCircularCross;
 
-        void Init()
-        {
-            var selfName = GetType().Name;
+        protected override Plugin DepPlugin => RefACCircularCross;
+        protected override string PuginName => nameof(RefACCircularCross);
 
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefACCircularCross != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefACCircularCross != null}");
-                RefACCircularCross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+        protected override void Init()
+        {
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void OnServerInitialized()
+        {
+            base.OnServerInitialized();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
         }
     }
 }
