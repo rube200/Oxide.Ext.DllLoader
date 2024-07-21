@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net48</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>1.2.1</Version>
+		<Version>1.2.2</Version>
 		<Authors>Rube200</Authors>
 		<Company>Rube200-Devs</Company>
 		<RepositoryType>Public</RepositoryType>
@@ -13,18 +13,22 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Reference Include="0Harmony">
-	    <HintPath>..\Oxide.Libs\0Harmony.dll</HintPath>
-	  </Reference>
-	  <Reference Include="Oxide.Core">
-	    <HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
-	  </Reference>
-	  <Reference Include="Oxide.CSharp">
-	    <HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
-	  </Reference>
-	  <Reference Include="Oxide.References">
-	    <HintPath>..\Oxide.Libs\Oxide.References.dll</HintPath>
-	  </Reference>
+		<Reference Include="0Harmony">
+			<HintPath>..\Oxide.Libs\0Harmony.dll</HintPath>
+		</Reference>
+		<Reference Include="Oxide.Core">
+			<HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Oxide.CSharp">
+			<HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Oxide.References">
+			<HintPath>..\Oxide.Libs\Oxide.References.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Lib.Harmony" Version="2.3.3" />
 	</ItemGroup>
 
 </Project>
