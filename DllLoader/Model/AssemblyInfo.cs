@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using Mono.Cecil;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Helper;
 
@@ -19,14 +20,16 @@ namespace Oxide.Ext.DllLoader.Model
         private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
         public readonly string AssemblyFile;
         public readonly DateTime LastWriteTimeUtc;
-        public readonly string OriginalName;
+        public readonly AssemblyDefinition AssemblyDefinition;
         private Assembly _assembly;
 
+        public string OriginalName => AssemblyDefinition.FullName;
 
-        public AssemblyInfo(string originalName, string filePath, DateTime lastWriteTimeUtc)
+
+        public AssemblyInfo(AssemblyDefinition assemblyDefinition, string filePath, DateTime lastWriteTimeUtc)
         {
             AssemblyFile = filePath;
-            OriginalName = originalName;
+            AssemblyDefinition = assemblyDefinition;
             LastWriteTimeUtc = lastWriteTimeUtc;
         }
 

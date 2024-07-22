@@ -23,15 +23,16 @@ namespace Oxide.Ext.DllLoader.Controller
         public static AssemblyInfo LoadAssemblyInfo(string filepath, DateTime lastWriteUtc)
         {
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(filepath);
-            var assemblyInfo = new AssemblyInfo(assemblyDefinition.FullName, filepath, lastWriteUtc);
+            return new AssemblyInfo(assemblyDefinition, filepath, lastWriteUtc);
+        }
 
-            var modulePluginType = assemblyDefinition.MainModule.Import(typeof(Plugin)).Resolve();
-            var pluginTypes = assemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
+        public static void RegisterAssemblyPlugins(AssemblyInfo assemblyInfo)
+        {
+            var modulePluginType = assemblyInfo.AssemblyDefinition.MainModule.Import(typeof(Plugin)).Resolve();
+            var pluginTypes = assemblyInfo.AssemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
 
             foreach (var pluginType in pluginTypes)
                 assemblyInfo.RegisterPluginName(pluginType.Name);
-
-            return assemblyInfo;
         }
 
         public static bool LoadAssembly(AssemblyInfo assemblyInfo)
@@ -51,16 +52,14 @@ namespace Oxide.Ext.DllLoader.Controller
 
             assemblyDefinition.ApplyPatches(true, assemblyInfo.PluginsName.Count > 0);
 
-            using (var stream = new MemoryStream())
-            {
-                assemblyDefinition.Write(stream);
-                assemblyInfo.Assembly = Assembly.Load(stream.ToArray(), symbols);
-            }
+            using var stream = new MemoryStream();
+            assemblyDefinition.Write(stream);
+            assemblyInfo.Assembly = Assembly.Load(stream.ToArray(), symbols);
 
             return true;
         }
 
-        private static byte[] GetAssemblySymbols(string filepath)
+        private static byte[]? GetAssemblySymbols(string filepath)
         {
             filepath = Path.ChangeExtension(filepath, ".pdb");
 #if DEBUG
@@ -75,21 +74,19 @@ namespace Oxide.Ext.DllLoader.Controller
                 return null;
             }
 
-            using (var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var symbolsData = new byte[fileStream.Length];
+            var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
+            if (count != symbolsData.Length)
             {
-                var symbolsData = new byte[fileStream.Length];
-                var count = fileStream.Read(symbolsData, 0, symbolsData.Length);
-                if (count != symbolsData.Length)
-                {
 #if DEBUG
                     Interface.Oxide.LogDebug("Fail to load symbols({0}) {1}bytes of {2}bytes.", symbolsData, count,
                         symbolsData.Length);
 #endif
-                    return null;
-                }
-
-                return symbolsData;
+                return null;
             }
+
+            return symbolsData;
         }
     }
 }

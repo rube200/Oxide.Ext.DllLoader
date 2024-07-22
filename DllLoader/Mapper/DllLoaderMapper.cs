@@ -5,17 +5,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Model;
+using static ProtoBuf.Serializer;
 
 #endregion
 
 namespace Oxide.Ext.DllLoader.Mapper
 {
-    public sealed class DllLoaderMapper : IDllLoaderMapper
+    public sealed class DllLoaderMapper : DefaultAssemblyResolver, IDllLoaderMapper
     {
+        private readonly ISet<string> _searchDirs = new HashSet<string>();
         private readonly IDictionary<string, AssemblyInfo> _assembliesInfo =
             new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -58,6 +61,12 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         public IEnumerable<string> ScanDirectoryPlugins(string directory)
         {
+            if (!_searchDirs.Contains(directory))
+            {
+                _searchDirs.Add(directory);
+                AddSearchDirectory(directory);
+            }
+
             ScanAndRegisterAssemblies(directory);
 #if DEBUG
             Interface.Oxide.LogDebug("Total assemblies registered({0}).", _assembliesInfo.Count);
@@ -122,6 +131,12 @@ namespace Oxide.Ext.DllLoader.Mapper
                     assemblyInfo.OriginalName, file.Name, directory);
 #endif
                 _assembliesInfo[assemblyName] = assemblyInfo;
+                RegisterAssembly(assemblyInfo.AssemblyDefinition);
+            }
+
+            foreach (var assembly in _assembliesInfo.Values)
+            {
+                AssemblyController.RegisterAssemblyPlugins(assembly);
             }
         }
 
