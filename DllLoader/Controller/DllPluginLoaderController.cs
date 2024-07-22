@@ -15,23 +15,21 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public sealed class DllPluginLoaderController : PluginLoader
     {
-        private DllLoaderExtension _extension;
-        internal DllLoaderMapper _mapper;
-        internal List<Plugin> OnFramePlugins = new List<Plugin>();
+        private readonly DllLoaderExtension _extension;
+        internal readonly DllLoaderMapper _mapper = new DllLoaderMapper();
+        internal readonly List<Plugin> OnFramePlugins = new List<Plugin>();
 
 
         public DllPluginLoaderController(DllLoaderExtension extension)
         {
             _extension = extension;
-            _mapper = new DllLoaderMapper();
         }
 
         public override string FileExtension => ".dll";
 
         ~DllPluginLoaderController()
         {
-            _mapper = null;
-            _extension = null;
+            OnFramePlugins.Clear();
         }
 
 

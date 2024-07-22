@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Helper;
 
@@ -67,11 +68,7 @@ namespace Oxide.Ext.DllLoader.Model
         private void RegisterPluginTypesFromAssembly()
         {
             var pluginsType = _assembly.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
-            foreach (var pluginType in pluginsType)
-            {
-                var pluginInfo = new PluginInfo(pluginType, AssemblyFile);
-                _pluginsInfo.Add(pluginInfo);
-            }
+            pluginsType.Do(p => _pluginsInfo.Add(new PluginInfo(p, AssemblyFile)));
         }
 
         internal void RegisterPluginName(string pluginName)

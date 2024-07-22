@@ -3,13 +3,14 @@
 	<PropertyGroup>
 		<TargetFramework>net48</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>0.0.0</Version>
+		<Version>1.0.1</Version>
 		<Authors>Rube200</Authors>
 		<Company>Rube200-Devs</Company>
 		<RepositoryType>Public</RepositoryType>
 		<RepositoryUrl>https://github.com/rube200/Oxide.Ext.DllLoader</RepositoryUrl>
-		<RootNamespace>Oxide.Ext.DllLoader</RootNamespace>
-		<AssemblyName>Oxide.Ext.DllLoader</AssemblyName>
+		<RootNamespace>DllLoader.Tester</RootNamespace>
+		<AssemblyName>DllLoader.Tester</AssemblyName>
+		<NoWarn>0649</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -19,16 +20,9 @@
 		<Reference Include="Oxide.CSharp">
 			<HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
 		</Reference>
-		<Reference Include="Oxide.References">
-			<HintPath>..\Oxide.Libs\Oxide.References.dll</HintPath>
-		</Reference>
 		<Reference Include="Oxide.Rust">
 			<HintPath>..\Oxide.Libs\Oxide.Rust.dll</HintPath>
 		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Lib.Harmony" Version="2.3.3" />
 	</ItemGroup>
 
 </Project>
