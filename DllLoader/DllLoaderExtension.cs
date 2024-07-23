@@ -3,6 +3,7 @@
 using System;
 using Oxide.Core;
 using Oxide.Core.Extensions;
+using Oxide.Core.Logging;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Watcher;
@@ -14,10 +15,10 @@ namespace Oxide.Ext.DllLoader
     // ReSharper disable once UnusedMember.Global
     public sealed class DllLoaderExtension : Extension
     {
-        private DllPluginLoaderController _pluginLoader;
+        private DllPluginLoaderController? _pluginLoader;
 #pragma warning disable IDE0052
         // ReSharper disable once NotAccessedField.Local
-        private DllLoaderWatcherFix _watcherFix; //Need to make GC not collect it when it shouldn't
+        private DllLoaderWatcherFix? _watcherFix; //Need to make GC not collect it when it shouldn't
 #pragma warning restore IDE0052
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
@@ -27,8 +28,8 @@ namespace Oxide.Ext.DllLoader
 
         public override string Name => "DllLoader";
         public override string Author => "Rube200";
-        public override VersionNumber Version => new VersionNumber(1, 2, 1);
-        public FSWatcher Watcher { get; private set; }
+        public override VersionNumber Version => new(1, 3, 1);
+        public FSWatcher? Watcher { get; private set; }
 
         ~DllLoaderExtension()
         {
@@ -48,7 +49,7 @@ namespace Oxide.Ext.DllLoader
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
             try
             {
-                _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader._mapper);
+                _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader!._mapper);
             }
             catch (Exception ex)
             {
@@ -62,12 +63,12 @@ namespace Oxide.Ext.DllLoader
 
         public override void OnModLoad()
         {
-            _pluginLoader.OnModLoad();
+            _pluginLoader!.OnModLoad();
         }
 
         public override void OnShutdown()
         {
-            _pluginLoader.OnShutdown();
+            _pluginLoader!.OnShutdown();
         }
 
         private void OnFrame(float delta)
@@ -76,7 +77,7 @@ namespace Oxide.Ext.DllLoader
                 return;
 
             foreach (var plugin in _pluginLoader.OnFramePlugins)
-                plugin.CallHook("OnFrame", new[] { delta });
+                plugin.CallHook(nameof(OnFrame), delta);
         }
     }
 }

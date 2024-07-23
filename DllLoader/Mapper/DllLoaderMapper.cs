@@ -10,7 +10,6 @@ using Oxide.Core;
 using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Model;
-using static ProtoBuf.Serializer;
 
 #endregion
 
@@ -33,21 +32,23 @@ namespace Oxide.Ext.DllLoader.Mapper
         public void OnModLoad()
         {
             AppDomain.CurrentDomain.AssemblyResolve += AssemblyResolve;
+            AddSearchDirectory(Interface.Oxide.ExtensionDirectory);
         }
 
         public void OnShutdown()
         {
+            RemoveSearchDirectory(Interface.Oxide.ExtensionDirectory);
             AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolve;
             _assembliesInfo.Clear();
         }
 
-        private Assembly AssemblyResolve(object sender, ResolveEventArgs args)
+        private Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
         {
             var assemblyInfo = GetAssemblyInfoByName(args.Name);
             if (assemblyInfo == null)
                 return null;
 
-            if (assemblyInfo.IsAssemblyLoaded || AssemblyController.LoadAssembly(assemblyInfo))
+            if (assemblyInfo.IsAssemblyLoaded || AssemblyController.LoadAssembly(assemblyInfo, this))
                 return assemblyInfo.Assembly;
 
             RemoveAssemblyInfo(args.Name);
@@ -119,7 +120,7 @@ namespace Oxide.Ext.DllLoader.Mapper
 #endif
                 }
 
-                assemblyInfo = AssemblyController.LoadAssemblyInfo(file.FullName, file.LastWriteTimeUtc);
+                assemblyInfo = AssemblyController.LoadAssemblyInfo(file.FullName, file.LastWriteTimeUtc, this);
                 if (assemblyInfo == null)
                 {
                     Interface.Oxide.LogError("Fail to load assembly({0})", file.FullName);
@@ -130,6 +131,7 @@ namespace Oxide.Ext.DllLoader.Mapper
                 Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).",
                     assemblyInfo.OriginalName, file.Name, directory);
 #endif
+
                 _assembliesInfo[assemblyName] = assemblyInfo;
                 RegisterAssembly(assemblyInfo.AssemblyDefinition);
             }
@@ -145,7 +147,7 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         #region Getters
 
-        public AssemblyInfo GetAssemblyInfoByName(string name)
+        public AssemblyInfo? GetAssemblyInfoByName(string name)
         {
             if (_assembliesInfo.TryGetValue(name, out var assemblyInfo))
                 return assemblyInfo;

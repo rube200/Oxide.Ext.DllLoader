@@ -15,7 +15,7 @@ namespace Oxide.Ext.DllLoader.Model
         private readonly HashSet<string> _referencedPlugins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public readonly string PluginFile;
         public readonly Type PluginType;
-        public Plugin Plugin;
+        public Plugin? Plugin;
 
 
         public PluginInfo(Type pluginType, string filePath)

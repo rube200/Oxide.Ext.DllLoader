@@ -11,7 +11,7 @@ namespace Oxide.Ext.DllLoader.API
     {
         IEnumerable<string> ScanDirectoryPlugins(string directory);
 
-        AssemblyInfo GetAssemblyInfoByName(string name);
+        AssemblyInfo? GetAssemblyInfoByName(string name);
 
         AssemblyInfo GetAssemblyInfoByFile(string name);
 

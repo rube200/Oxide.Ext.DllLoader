@@ -5,9 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using Oxide.Core;
 using Oxide.Core.CSharp;
-using Oxide.Core.Plugins;
+using Oxide.Ext.DllLoader.Controller;
 
 #endregion
 
@@ -15,7 +16,7 @@ namespace Oxide.Ext.DllLoader.Helper
 {
     public static class AssemblyHelper
     {
-        public static void ApplyPatches(this AssemblyDefinition assemblyDefinition, bool name = true, bool oxide = true)
+        public static void ApplyPatches(this AssemblyDefinition assemblyDefinition, bool name = true, bool oxide = true, IAssemblyResolver? assemblyResolver = null)
         {
             var originalName = assemblyDefinition.Name.Name;
 #if DEBUG
@@ -48,11 +49,12 @@ namespace Oxide.Ext.DllLoader.Helper
 #if DEBUG
                 Interface.Oxide.LogDebug("Patching assembly oxide...");
 #endif
-                var modulePluginType = assemblyDefinition.MainModule.Import(typeof(Plugin)).Resolve();
-                var pluginTypes = assemblyDefinition.GetDefinedTypes().GetAssignedTypes(modulePluginType);
-
+                var pluginTypes = AssemblyController.GetPluginTypes(assemblyDefinition);
                 foreach (var pluginType in pluginTypes)
-                    _ = new DirectCallMethod(assemblyDefinition.MainModule, pluginType, new ReaderParameters());
+                    _ = new DirectCallMethod(assemblyDefinition.MainModule, pluginType, new ReaderParameters
+                    {
+                        AssemblyResolver = assemblyResolver
+                    });
 
 #if DEBUG
                 Interface.Oxide.LogDebug("Patch oxide complete.");
@@ -98,7 +100,7 @@ namespace Oxide.Ext.DllLoader.Helper
 
         #region IsAssignableFromForTypeDefinition
 
-        public static bool IsTypeDefEqual(this TypeDefinition self, TypeDefinition other)
+        public static bool IsTypeDefEqual(this TypeDefinition? self, TypeDefinition? other)
         {
             //some people report MetadataToken could be diff for the same type
             return self == other || self?.MetadataToken == other?.MetadataToken;

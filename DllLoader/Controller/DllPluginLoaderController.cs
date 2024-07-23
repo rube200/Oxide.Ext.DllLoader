@@ -13,17 +13,10 @@ using Oxide.Plugins;
 
 namespace Oxide.Ext.DllLoader.Controller
 {
-    public sealed class DllPluginLoaderController : PluginLoader
+    public sealed class DllPluginLoaderController(DllLoaderExtension extension) : PluginLoader
     {
-        private readonly DllLoaderExtension _extension;
-        internal readonly DllLoaderMapper _mapper = new DllLoaderMapper();
-        internal readonly List<Plugin> OnFramePlugins = new List<Plugin>();
-
-
-        public DllPluginLoaderController(DllLoaderExtension extension)
-        {
-            _extension = extension;
-        }
+        internal readonly DllLoaderMapper _mapper = new();
+        internal readonly List<Plugin> OnFramePlugins = [];
 
         public override string FileExtension => ".dll";
 
@@ -65,7 +58,7 @@ namespace Oxide.Ext.DllLoader.Controller
 
             return true;
         }
-        public override Plugin Load(string directory, string name)
+        public override Plugin? Load(string directory, string name)
         {
 #if DEBUG
             Interface.Oxide.LogDebug("Loading requested to plugin({0}).", name);
@@ -90,7 +83,7 @@ namespace Oxide.Ext.DllLoader.Controller
 #endif
                 LoadingPlugins.Add(name);
 
-                if (!assemblyInfo.IsAssemblyLoaded && !AssemblyController.LoadAssembly(assemblyInfo))
+                if (!assemblyInfo.IsAssemblyLoaded && !AssemblyController.LoadAssembly(assemblyInfo, _mapper))
                 {
                     LoadingPlugins.Remove(name);
                     Interface.Oxide.LogError(
@@ -156,9 +149,9 @@ namespace Oxide.Ext.DllLoader.Controller
             }
         }
 
-        private Plugin InstantiatePlugin(PluginInfo pluginInfo)
+        private Plugin? InstantiatePlugin(PluginInfo pluginInfo)
         {
-            Plugin plugin;
+            Plugin? plugin;
             try
             {
                 plugin = Activator.CreateInstance(pluginInfo.PluginType) as Plugin;
@@ -201,7 +194,7 @@ namespace Oxide.Ext.DllLoader.Controller
                     return null;
                 }
 
-                csharpPlugin.Watcher = _extension.Watcher;
+                csharpPlugin.Watcher = extension.Watcher;
             }
 
             plugin.Loader = this;

@@ -14,29 +14,23 @@ using Oxide.Ext.DllLoader.Helper;
 
 namespace Oxide.Ext.DllLoader.Model
 {
-    public class AssemblyInfo : IEquatable<AssemblyInfo>
+    public class AssemblyInfo(AssemblyDefinition assemblyDefinition, string filePath, DateTime lastWriteTimeUtc) : IEquatable<AssemblyInfo>
     {
-        private readonly HashSet<string> _expectedPluginsName = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<PluginInfo> _pluginsInfo = new HashSet<PluginInfo>();
-        public readonly string AssemblyFile;
-        public readonly DateTime LastWriteTimeUtc;
-        public readonly AssemblyDefinition AssemblyDefinition;
-        private Assembly _assembly;
+        private readonly HashSet<string> _expectedPluginsName = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<PluginInfo> _pluginsInfo = [];
+
+        public AssemblyDefinition AssemblyDefinition => assemblyDefinition;
+        public string AssemblyFile => filePath;
+        public DateTime LastWriteTimeUtc => lastWriteTimeUtc;
+
+
+        private Assembly? _assembly;
 
         public string OriginalName => AssemblyDefinition.FullName;
 
-
-        public AssemblyInfo(AssemblyDefinition assemblyDefinition, string filePath, DateTime lastWriteTimeUtc)
-        {
-            AssemblyFile = filePath;
-            AssemblyDefinition = assemblyDefinition;
-            LastWriteTimeUtc = lastWriteTimeUtc;
-        }
-
-
         public Assembly Assembly
         {
-            get => _assembly;
+            get => _assembly!;
             set
             {
                 _assembly = value;
@@ -70,8 +64,8 @@ namespace Oxide.Ext.DllLoader.Model
 
         private void RegisterPluginTypesFromAssembly()
         {
-            var pluginsType = _assembly.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
-            pluginsType.Do(p => _pluginsInfo.Add(new PluginInfo(p, AssemblyFile)));
+            var pluginsType = _assembly!.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
+            pluginsType.Do(p => _pluginsInfo.Add(new PluginInfo(p, filePath)));
         }
 
         internal void RegisterPluginName(string pluginName)
@@ -110,10 +104,10 @@ namespace Oxide.Ext.DllLoader.Model
 
         public bool IsFile(string filename)
         {
-            if (AssemblyFile.Equals(filename, StringComparison.OrdinalIgnoreCase))
+            if (filePath.Equals(filename, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            var file = Path.GetFileNameWithoutExtension(AssemblyFile);
+            var file = Path.GetFileNameWithoutExtension(filePath);
             if (file.Equals(filename, StringComparison.OrdinalIgnoreCase))
                 return true;
 

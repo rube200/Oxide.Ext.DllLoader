@@ -10,9 +10,15 @@
 		<RepositoryUrl>https://github.com/rube200/Oxide.Ext.DllLoader</RepositoryUrl>
 		<RootNamespace>Oxide.Ext.DllLoader</RootNamespace>
 		<AssemblyName>Oxide.Ext.DllLoader</AssemblyName>
+		<LangVersion>12</LangVersion>
+		<Nullable>enable</Nullable>
+		<WarningsAsErrors>nullable</WarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Reference Include="0Harmony">
+			<HintPath>..\Oxide.Libs\0Harmony.dll</HintPath>
+		</Reference>
 		<Reference Include="Oxide.Core">
 			<HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
 		</Reference>
@@ -25,10 +31,6 @@
 		<Reference Include="Oxide.Rust">
 			<HintPath>..\Oxide.Libs\Oxide.Rust.dll</HintPath>
 		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Lib.Harmony" Version="2.3.3" />
 	</ItemGroup>
 
 </Project>

@@ -19,8 +19,8 @@ namespace Oxide.Ext.DllLoader.Watcher
         private static readonly IDictionary<PluginChangeWatcher, IDllLoaderMapper> _fsWatcherMappers =
             new Dictionary<PluginChangeWatcher, IDllLoaderMapper>();
 
-        private Harmony _harmonyInstance;
-        private FSWatcher _watcher;
+        private Harmony? _harmonyInstance;
+        private FSWatcher? _watcher;
 
         public DllLoaderWatcherFix(string name, FSWatcher fsWatcher, IDllLoaderMapper dllMapper)
         {
@@ -41,10 +41,10 @@ namespace Oxide.Ext.DllLoader.Watcher
 
         ~DllLoaderWatcherFix()
         {
-            _fsWatcherMappers.Remove(_watcher);
+            _fsWatcherMappers.Remove(_watcher!);
             _watcher = null;
 
-            _harmonyInstance.UnpatchAll(_harmonyInstance.Id);
+            _harmonyInstance!.UnpatchAll(_harmonyInstance.Id);
             _harmonyInstance = null;
         }
 
@@ -192,7 +192,7 @@ namespace Oxide.Ext.DllLoader.Watcher
                 return true;
             }
 
-            var eventDelegate = fieldInfo.GetValue(__instance) as Delegate;
+            var eventDelegate = (Delegate)fieldInfo.GetValue(__instance);
             foreach (var pluginName in assemblyInfo.PluginsName)
                 Raise(pluginName, eventDelegate);
 
