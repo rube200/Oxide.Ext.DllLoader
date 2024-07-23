@@ -39,8 +39,7 @@ namespace Oxide.Ext.DllLoader.Helper
 #endif
                 assemblyDefinition.Name.Name = $"{assemblyDefinition.Name.Name}-{DateTime.UtcNow.Ticks}";
 #if DEBUG
-                Interface.Oxide.LogDebug("Patch name complete. New name({0}) | old name({1}).", originalName,
-                    assemblyDefinition.Name.Name);
+                Interface.Oxide.LogDebug("Patch name complete. New name({0}) | Old name({1}).", assemblyDefinition.Name.Name, originalName);
 #endif
             }
 

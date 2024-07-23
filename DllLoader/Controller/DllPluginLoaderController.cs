@@ -89,7 +89,10 @@ namespace Oxide.Ext.DllLoader.Controller
                     Interface.Oxide.LogError(
                         "Fail to load plugin({0}), assembly({1}) and assembly file({2}) not found.", name,
                         assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
-                    _mapper.RemoveAssemblyInfo(assemblyInfo.OriginalName);
+
+                    var assemblyDefinition = assemblyInfo.AssemblyDefinition.Name;
+                    _mapper.RemoveAssemblyInfo(assemblyDefinition.Name);
+                    _mapper.RemoveAssemblyInfo(assemblyDefinition.FullName);
                     return null;
                 }
 

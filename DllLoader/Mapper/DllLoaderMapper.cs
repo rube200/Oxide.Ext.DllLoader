@@ -55,6 +55,18 @@ namespace Oxide.Ext.DllLoader.Mapper
             return null;
         }
 
+        public override AssemblyDefinition Resolve(AssemblyNameReference name)
+        {
+            if (!name.Name.StartsWith("Oxide.") && !name.FullName.StartsWith("Oxide."))
+            {
+                var assemblyInfo = GetAssemblyInfoByName(name.Name) ?? GetAssemblyInfoByName(name.FullName);
+                if (assemblyInfo != null)
+                    return assemblyInfo.AssemblyDefinition;
+            }
+
+            return base.Resolve(name);
+        }
+
         #endregion
 
 
@@ -104,7 +116,8 @@ namespace Oxide.Ext.DllLoader.Mapper
                 }
 
                 var assemblyName = AssemblyController.GetAssemblyNameFromFile(file.FullName);
-                if (_assembliesInfo.TryGetValue(assemblyName, out var assemblyInfo))
+                var assemblyInfo = GetAssemblyInfoByName(assemblyName.FullName) ?? GetAssemblyInfoByName(assemblyName.Name);
+                if (assemblyInfo != null)
                 {
                     if (assemblyInfo.LastWriteTimeUtc >= file.LastWriteTimeUtc)
                     {
@@ -132,14 +145,13 @@ namespace Oxide.Ext.DllLoader.Mapper
                     assemblyInfo.OriginalName, file.Name, directory);
 #endif
 
-                _assembliesInfo[assemblyName] = assemblyInfo;
+                _assembliesInfo[assemblyName.Name] = assemblyInfo;
+                _assembliesInfo[assemblyName.FullName] = assemblyInfo;
                 RegisterAssembly(assemblyInfo.AssemblyDefinition);
             }
 
             foreach (var assembly in _assembliesInfo.Values)
-            {
                 AssemblyController.RegisterAssemblyPlugins(assembly);
-            }
         }
 
         #endregion

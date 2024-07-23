@@ -16,9 +16,9 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public static class AssemblyController
     {
-        public static string GetAssemblyNameFromFile(string filepath)
+        public static AssemblyNameDefinition GetAssemblyNameFromFile(string filepath)
         {
-            return AssemblyDefinition.ReadAssembly(filepath).FullName;
+            return AssemblyDefinition.ReadAssembly(filepath).Name;
         }
 
         public static AssemblyInfo LoadAssemblyInfo(string filepath, DateTime lastWriteUtc, IAssemblyResolver? assemblyResolver = null)
