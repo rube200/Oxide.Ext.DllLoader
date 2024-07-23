@@ -19,7 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Oxide.Libs", "Oxide.Libs", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DllLoader.Test.Uncompiled", "DllLoader.Test.Uncompiled", "{1B314364-A649-4E85-829F-CA7A99F1553A}"
 	ProjectSection(SolutionItems) = preProject
-		DllLoader.Test.Uncompiled\DepTestPlugin.cs = DllLoader.Test.Uncompiled\DepTestPlugin.cs
 		DllLoader.Test.Uncompiled\RefAACross.cs = DllLoader.Test.Uncompiled\RefAACross.cs
 		DllLoader.Test.Uncompiled\RefADCircularCross.cs = DllLoader.Test.Uncompiled\RefADCircularCross.cs
 		DllLoader.Test.Uncompiled\RefJCircular.cs = DllLoader.Test.Uncompiled\RefJCircular.cs
@@ -28,10 +27,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DllLoader.Test.Uncompiled",
 		DllLoader.Test.Uncompiled\RefODeepCross.cs = DllLoader.Test.Uncompiled\RefODeepCross.cs
 		DllLoader.Test.Uncompiled\RefQDeepCross.cs = DllLoader.Test.Uncompiled\RefQDeepCross.cs
 		DllLoader.Test.Uncompiled\RefYCross.cs = DllLoader.Test.Uncompiled\RefYCross.cs
-		DllLoader.Test.Uncompiled\TestPlugin.cs = DllLoader.Test.Uncompiled\TestPlugin.cs
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DllLoader.Tester", "DllLoader.Tester\DllLoader.Tester.csproj", "{F82993FB-3800-470C-AA05-0F2BDEFF37D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllLoader.Tester", "DllLoader.Tester\DllLoader.Tester.csproj", "{F82993FB-3800-470C-AA05-0F2BDEFF37D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
