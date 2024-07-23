@@ -91,7 +91,7 @@ namespace Oxide.Ext.DllLoader.Mapper
 
             ScanAndRegisterAssemblies(directory);
 #if DEBUG
-            Interface.Oxide.LogDebug("Total assemblies registered({0}).", assemblies.Count);
+            Interface.Oxide.LogDebug("Total assemblies registered({0}).", _assembliesInfoByName.Count);
 #endif
 
             var plugins = _assembliesInfoByName.Values.SelectMany(ai => ai.PluginsName).ToArray();
