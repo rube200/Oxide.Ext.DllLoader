@@ -46,13 +46,17 @@ namespace Oxide.Ext.DllLoader.Controller
         {
             if (LoadingPlugins.Contains(name))
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loading.", name);
+#endif
                 return false;
             }
 
             if (LoadedPlugins.ContainsKey(name))
             {
+#if DEBUG
                 Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loaded.", name);
+#endif
                 return false;
             }
 
@@ -91,8 +95,8 @@ namespace Oxide.Ext.DllLoader.Controller
                         assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
 
                     var assemblyDefinition = assemblyInfo.AssemblyDefinition.Name;
-                    _mapper.RemoveAssemblyInfo(assemblyDefinition.Name);
-                    _mapper.RemoveAssemblyInfo(assemblyDefinition.FullName);
+                    _mapper.RemoveAssemblyInfo(assemblyDefinition);
+
                     return null;
                 }
 
