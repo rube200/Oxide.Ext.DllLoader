@@ -19,7 +19,7 @@ jobs:
       security-events: write
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
         - build-mode: autobuild
