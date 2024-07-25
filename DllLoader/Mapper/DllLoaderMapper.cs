@@ -18,7 +18,7 @@ using static HarmonyLib.AccessTools;
 
 namespace Oxide.Ext.DllLoader.Mapper
 {
-    public sealed class DllLoaderMapper : DefaultAssemblyResolver, IDllLoaderMapper
+    public sealed class DllLoaderMapper : DefaultAssemblyResolver, IDllLoaderMapperLoadable
     {
         private readonly IDictionary<string, AssemblyInfo> _assembliesInfoByFullName =
             new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
@@ -111,19 +111,25 @@ namespace Oxide.Ext.DllLoader.Mapper
             }
 
             var dirFiles = new DirectoryInfo(directory).GetFiles("*.dll", SearchOption.TopDirectoryOnly);
-            dirFiles.Do(RegisterAssemblyFromFile);
+            dirFiles.Do(file => RegisterAssemblyFromFile(file));
         }
 
         private static readonly FieldRef<object, IDictionary<string, AssemblyDefinition>> Cache = FieldRefAccess<IDictionary<string, AssemblyDefinition>>(typeof(DllLoaderMapper), "cache");
-        private void RegisterAssemblyFromFile(FileInfo file)
+        public bool RegisterAssemblyFromFile(FileInfo file)
         {
+            if (!file.Exists)
+            {
+                Interface.Oxide.LogError("Fail to load assembly({0}), file does not exist.", file.FullName);
+                return false;
+            }
+
 #if DEBUG
             Interface.Oxide.LogDebug("Found file({0}) in directory({1}).", file.Name, file.DirectoryName);
 #endif
             if ((file.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
             {
                 Interface.Oxide.LogInfo("Ignoring file({0}), marked as hidden.", file.Name);
-                return;
+                return false;
             }
 
             var assemblyDefinition = GetAssemblyDefinitionFromFile(file.FullName);
@@ -135,14 +141,14 @@ namespace Oxide.Ext.DllLoader.Mapper
 #if DEBUG
                 Interface.Oxide.LogDebug("Assembly({0}) already registered.", file.FullName);
 #endif
-                return;
+                return false;
             }
 
             assemblyInfo = new AssemblyInfo(assemblyDefinition, file.FullName);
             if (assemblyInfo == null)
             {
                 Interface.Oxide.LogError("Fail to load assembly({0})", file.FullName);
-                return;
+                return false;
             }
 
 #if DEBUG
@@ -151,6 +157,7 @@ namespace Oxide.Ext.DllLoader.Mapper
 
             _assembliesInfoByFullName[assemblyDefinition.FullName] = assemblyInfo;
             Cache(this)[assemblyDefinitionName.FullName] = assemblyInfo.AssemblyDefinition;
+            return true;
         }
 
         #endregion

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Xml.Linq;
 using Oxide.Core;
@@ -18,15 +19,13 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public sealed class DllPluginLoaderController(DllLoaderExtension extension) : PluginLoader
     {
-        internal readonly IDllLoaderMapper _mapper = new DllLoaderMapper();
-        internal readonly List<Plugin> OnFramePlugins = [];
+        private readonly IDllLoaderMapperLoadable _mapper = new DllLoaderMapper();
+        private readonly List<Plugin> _onFramePlugins = [];
+
+        public IDllLoaderMapper Mapper => _mapper;
+        public IReadOnlyCollection<Plugin> OnFramePlugins => _onFramePlugins;
 
         public override string FileExtension => ".dll";
-
-        ~DllPluginLoaderController()
-        {
-            OnFramePlugins.Clear();
-        }
 
 
         public void OnModLoad()
@@ -36,13 +35,14 @@ namespace Oxide.Ext.DllLoader.Controller
 
         public void OnShutdown()
         {
+            _onFramePlugins.Clear();
             _mapper.OnShutdown();
         }
 
 
         public override IEnumerable<string> ScanDirectory(string directory)
         {
-            return _mapper.ScanDirectoryPlugins(directory);
+            return Mapper.ScanDirectoryPlugins(directory);
         }
 
 
@@ -78,7 +78,7 @@ namespace Oxide.Ext.DllLoader.Controller
 #if DEBUG
             Interface.Oxide.LogDebug("Getting assembly info for plugin({0}).", pluginName);
 #endif
-            var assemblyInfo = _mapper.GetAssemblyInfoByPlugin(pluginName);
+            var assemblyInfo = Mapper.GetAssemblyInfoByPlugin(pluginName);
             if (assemblyInfo == null)
             {
                 Interface.Oxide.LogError("Fail to find assembly info for plugin({0}).", pluginName);
@@ -92,12 +92,12 @@ namespace Oxide.Ext.DllLoader.Controller
             LoadingPlugins.Add(pluginName);
             try
             {
-                if (!assemblyInfo.IsAssemblyLoaded && !_mapper.LoadAssembly(assemblyInfo))
+                if (!assemblyInfo.IsAssemblyLoaded && !Mapper.LoadAssembly(assemblyInfo))
                 {
                     Interface.Oxide.LogError("Fail to load plugin({0}), assembly({1}) and assembly file({2}) not found.", pluginName, assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
 
                     var assemblyNameDefinition = assemblyInfo.AssemblyDefinition.Name;
-                    _mapper.RemoveAssemblyInfo(assemblyNameDefinition);
+                    Mapper.RemoveAssemblyInfo(assemblyNameDefinition);
                     return null;
                 }
 
@@ -179,7 +179,7 @@ namespace Oxide.Ext.DllLoader.Controller
                 }
 
                 if (csharpPlugin.HookedOnFrame)
-                    OnFramePlugins.Add(csharpPlugin);
+                    _onFramePlugins.Add(csharpPlugin);
                 csharpPlugin.Watcher = extension.Watcher;
             }
 
@@ -197,19 +197,29 @@ namespace Oxide.Ext.DllLoader.Controller
             LoadedPlugins.Remove(plugin.Name);
         }
 
-        internal void AddAssembly(string name)
+
+        internal void AddAssembly(string assemblyName)
         {
-            throw new NotImplementedException();
+            //todo assemblyName is file name without ext instead of path
+            var fileInfo = new FileInfo(assemblyName);
+            if (!fileInfo.Exists || !Mapper.RegisterAssemblyFromFile(fileInfo))
+            {
+                Interface.Oxide.LogDebug(fileInfo.Exists.ToString());
+                Interface.Oxide.LogError("Fail to load assembly in file({0})", assemblyName);
+                return;
+            }
+
+            Interface.Oxide.LogDebug("super");
         }
 
-        internal void RemoveAssembly(string name)
+        internal void RemoveAssembly(string assemblyName)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("RemoveAssembly");
         }
 
-        internal void ReloadAssembly(string name)
+        internal void ReloadAssembly(string assemblyName)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ReloadAssembly");
         }
     }
 }

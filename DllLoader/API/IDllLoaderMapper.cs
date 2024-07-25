@@ -1,6 +1,7 @@
 ﻿#region
 
 using System.Collections.Generic;
+using System.IO;
 using Mono.Cecil;
 using Oxide.Ext.DllLoader.Model;
 
@@ -8,15 +9,13 @@ using Oxide.Ext.DllLoader.Model;
 
 namespace Oxide.Ext.DllLoader.API
 {
-    public interface IDllLoaderMapper
+    public interface IDllLoaderMapper : IAssemblyResolver
     {
         AssemblyInfo GetAssemblyInfoByPlugin(string pluginName);
 
         bool LoadAssembly(AssemblyInfo assemblyInfo);
 
-        void OnModLoad();
-
-        void OnShutdown();
+        bool RegisterAssemblyFromFile(FileInfo fileInfo);
 
         bool RemoveAssemblyInfo(AssemblyNameReference assemblyNameReference);
 

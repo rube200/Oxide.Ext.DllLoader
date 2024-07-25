@@ -1,5 +1,6 @@
 ﻿#region
 
+using HarmonyLib;
 using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
@@ -13,6 +14,9 @@ namespace Oxide.Ext.DllLoader
     // ReSharper disable once UnusedMember.Global
     public sealed class DllLoaderExtension : Extension
     {
+        public const string ProjectName = "DllLoader";
+        private static readonly Harmony harmony = new(ProjectName);
+
         private readonly DllPluginLoaderController _pluginLoader;
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
@@ -20,19 +24,10 @@ namespace Oxide.Ext.DllLoader
             _pluginLoader = new DllPluginLoaderController(this);
         }
 
-        public override string Name => "DllLoader";
+        public override string Name => ProjectName;
         public override string Author => "Rube200";
         public override VersionNumber Version => new(1, 3, 1);
         public FSWatcher? Watcher { get; private set; }
-
-        ~DllLoaderExtension()
-        {
-            Watcher!.OnPluginSourceChanged -= OnPluginSourceChanged;
-            Watcher.OnPluginRemoved -= OnPluginRemoved;
-            Watcher.OnPluginAdded -= OnPluginAdded;
-            DllLoaderWatcherFix.RemoveWatcher(Watcher);
-        }
-
 
         public override void Load()
         {
@@ -43,7 +38,7 @@ namespace Oxide.Ext.DllLoader
         public override void LoadPluginWatchers(string pluginDirectory)
         {
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
-            DllLoaderWatcherFix.AddWatcher(Watcher, _pluginLoader!._mapper);
+            DllLoaderWatcherFix.AddWatcher(Watcher, _pluginLoader!.Mapper);
 
             Watcher.OnPluginAdded += OnPluginAdded;
             Watcher.OnPluginRemoved += OnPluginRemoved;
@@ -52,12 +47,19 @@ namespace Oxide.Ext.DllLoader
 
         public override void OnModLoad()
         {
+            harmony.PatchAll();
             _pluginLoader!.OnModLoad();
         }
 
         public override void OnShutdown()
         {
+            Watcher!.OnPluginSourceChanged -= OnPluginSourceChanged;
+            Watcher.OnPluginRemoved -= OnPluginRemoved;
+            Watcher.OnPluginAdded -= OnPluginAdded;
+            DllLoaderWatcherFix.RemoveWatcher(Watcher);
+
             _pluginLoader!.OnShutdown();
+            harmony.UnpatchAll(harmony.Id);
         }
 
         private void OnFrame(float delta)
@@ -72,7 +74,7 @@ namespace Oxide.Ext.DllLoader
         private void OnPluginAdded(string assemblyName)
         {
 #if DEBUG
-            Interface.Oxide.LogDebug("Assembly({0}) added, changed! Loading plugins...", assemblyName);
+            Interface.Oxide.LogDebug("Assembly({0}) file added. Loading plugins...", assemblyName);
 #endif
             _pluginLoader.AddAssembly(assemblyName);
         }
@@ -80,7 +82,7 @@ namespace Oxide.Ext.DllLoader
         private void OnPluginRemoved(string assemblyName)
         {
 #if DEBUG
-            Interface.Oxide.LogDebug("Assembly({0}) removed. Unloading plugins...", assemblyName);
+            Interface.Oxide.LogDebug("Assembly({0}) file removed. Unloading plugins...", assemblyName);
 #endif
             _pluginLoader.RemoveAssembly(assemblyName);
         }
@@ -88,7 +90,7 @@ namespace Oxide.Ext.DllLoader
         private void OnPluginSourceChanged(string assemblyName)
         {
 #if DEBUG
-            Interface.Oxide.LogDebug("Assembly({0}) changed! Reloading...", assemblyName);
+            Interface.Oxide.LogDebug("Assembly({0}) fille changed! Reloading plugins...", assemblyName);
 #endif
             _pluginLoader.ReloadAssembly(assemblyName);
         }

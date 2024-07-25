@@ -53,7 +53,7 @@ namespace Oxide.Ext.DllLoader.Model
 
         private Dictionary<string, PluginInfo> GetPluginsInAssembly()
         {
-            var pluginsType = _assembly!.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
+            var pluginsType = Assembly.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
             return pluginsType.Select(p => new PluginInfo(p, AssemblyFile)).ToDictionary(p => p.PluginName);
         }
 
