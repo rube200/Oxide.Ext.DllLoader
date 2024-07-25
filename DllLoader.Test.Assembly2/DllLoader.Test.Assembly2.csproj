@@ -11,6 +11,9 @@
 		<RootNamespace>DllLoader.Test.Assembly2</RootNamespace>
 		<AssemblyName>DllLoader.Test.Assembly2</AssemblyName>
 		<NoWarn>0649</NoWarn>
+		<LangVersion>12</LangVersion>
+		<Nullable>enable</Nullable>
+		<WarningsAsErrors>nullable</WarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>

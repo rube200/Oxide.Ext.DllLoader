@@ -1,4 +1,6 @@
-﻿namespace Oxide.Plugins
+﻿using Oxide.Plugins;
+
+namespace DllLoader.Test.Libs
 {
     public abstract class TestPlugin : RustPlugin
     {
@@ -13,11 +15,6 @@
         protected virtual void Loaded()
         {
             Puts($"{SelfName} - Loaded");
-        }
-
-        protected virtual void OnServerInitialized()
-        {
-            Puts($"{SelfName} - OnServerInitialized");
         }
 
         protected virtual void Unload()

@@ -1,3 +1,4 @@
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
@@ -7,10 +8,10 @@ namespace Oxide.Plugins
     public class RefAUAssemblyCircular : DepTestPlugin
     {
         [PluginReference] 
-        Plugin RefATAssemblyCircular;
+        Plugin? RefATAssemblyCircular;
 
-        protected override Plugin DepPlugin => RefATAssemblyCircular;
-        protected override string PuginName => nameof(DepPlugin);
+        public override Plugin? DepPlugin => RefATAssemblyCircular;
+        public override string PluginName => nameof(RefATAssemblyCircular);
 
         protected override void Init()
         {
@@ -22,9 +23,9 @@ namespace Oxide.Plugins
             base.Loaded();
         }
 
-        protected override void OnServerInitialized()
+        protected override void LoadedTest(bool callOnTimer = true)
         {
-            base.OnServerInitialized();
+            base.LoadedTest(true);
         }
 
         protected override void Unload()
@@ -40,6 +41,11 @@ namespace Oxide.Plugins
         protected override void Hotloading()
         {
             base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

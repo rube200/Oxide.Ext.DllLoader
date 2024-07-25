@@ -1,3 +1,5 @@
+using DllLoader.Test.Libs;
+
 namespace Oxide.Plugins
 {
     [Info("RefASAssemblyDeep", "Rube200", "1.0.0")]
@@ -14,11 +16,6 @@ namespace Oxide.Plugins
             base.Loaded();
         }
 
-        protected override void OnServerInitialized()
-        {
-            base.OnServerInitialized();
-        }
-
         protected override void Unload()
         {
             base.Unload();
@@ -32,6 +29,11 @@ namespace Oxide.Plugins
         protected override void Hotloading()
         {
             base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

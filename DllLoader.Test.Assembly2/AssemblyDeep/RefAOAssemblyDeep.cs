@@ -1,3 +1,4 @@
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
@@ -7,10 +8,10 @@ namespace Oxide.Plugins
     public class RefAOAssemblyDeep : DepTestPlugin
     {
         [PluginReference]
-        Plugin RefAPAssemblyDeep;
+        Plugin? RefAPAssemblyDeep;
 
-        protected override Plugin DepPlugin => RefAPAssemblyDeep;
-        protected override string PuginName => nameof(RefAPAssemblyDeep);
+        public override Plugin? DepPlugin => RefAPAssemblyDeep;
+        public override string PluginName => nameof(RefAPAssemblyDeep);
 
         protected override void Init()
         {
@@ -22,9 +23,9 @@ namespace Oxide.Plugins
             base.Loaded();
         }
 
-        protected override void OnServerInitialized()
+        protected override void LoadedTest(bool callOnTimer = true)
         {
-            base.OnServerInitialized();
+            base.LoadedTest(true);
         }
 
         protected override void Unload()
@@ -40,6 +41,11 @@ namespace Oxide.Plugins
         protected override void Hotloading()
         {
             base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

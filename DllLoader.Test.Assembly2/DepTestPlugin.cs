@@ -2,78 +2,71 @@
 using System;
 using System.Diagnostics;
 
-namespace Oxide.Plugins
+namespace DllLoader.Test.Libs
 {
-    public abstract class DepTestPlugin : RustPlugin
+    public abstract class DepTestPlugin : TestPlugin
     {
-        protected abstract Plugin DepPlugin { get; }
-        protected abstract string PuginName { get; }
-        protected string SelfName => GetType().Name;
+        public abstract Plugin? DepPlugin { get; }
+        public abstract string PluginName { get; }
 
-
-        protected virtual void Init()
+        protected override void Init()
         {
-            Puts($"{SelfName} - Init");
-            CheckPluginLoaded(false);
+            base.Init();
+            InitTest();
         }
 
-        protected virtual void Loaded()
+        protected void InitTest(bool callOnTimer = true)
         {
-            Puts($"{SelfName} - Loaded");
+            CheckPluginLoaded(callOnTimer);
+        }
+
+        protected override void Loaded()
+        {
+            base.Loaded();
+            LoadedTest();
+        }
+
+        protected virtual void LoadedTest(bool callOnTimer = true)
+        {
+            CheckPluginLoaded(callOnTimer);
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
             CheckPluginLoaded();
         }
 
-        protected virtual void OnServerInitialized()
+        protected override void Hotloading()
         {
-            Puts($"{SelfName} - OnServerInitialized");
+            base.Hotloading();
             CheckPluginLoaded();
         }
 
-        protected virtual void Unload()
+        public virtual void CheckPluginLoaded(bool callOnTimer = true)
         {
-            Puts($"{SelfName} - Unload");
-            CheckPluginLoaded();
-        }
-
-        protected virtual void Shutdown()
-        {
-            Puts($"{SelfName} - Shutdown");
-            CheckPluginLoaded();
-        }
-
-        protected virtual void Hotloading()
-        {
-            Puts($"{SelfName} - Hotloading");
-            CheckPluginLoaded();
-        }
-
-        protected virtual void CheckPluginLoaded(bool expectLoad = true)
-        {
-            if (expectLoad)
+            var invocatorName = new StackTrace().GetFrame(1).GetMethod().Name;
+            if (callOnTimer)
             {
-                if (DepPlugin == null)
-                    throw new Exception($"Plugin ref ({PuginName}) is UNLOADED.");
-
+                timer.Once(3f, CallPluginRef);
             }
             else
             {
-                if (DepPlugin != null)
-                    throw new Exception($"Plugin ref ({PuginName}) is LOADED.");
+                CallPluginRef();
             }
 
-            var invocatorName = new StackTrace().GetFrame(1).GetMethod().Name;
-            timer.Once(3f, () =>
+            void CallPluginRef()
             {
                 if (DepPlugin == null)
-                    throw new Exception($"{invocatorName} plugin ref ({PuginName}) is UNLOADED.");
+                    throw new Exception($"{invocatorName} plugin ref ({PluginName}) is UNLOADED.");
 
-                DepPlugin?.Call(nameof(CallRef), SelfName);
-            });
-        }
-
-        protected virtual void CallRef(string callerMsg)
-        {
-            Puts($"CallRef from: '{callerMsg}'");
+                DepPlugin.Call(nameof(CallRef), SelfName);
+            }
         }
     }
 }
