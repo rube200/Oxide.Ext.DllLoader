@@ -1,9 +1,7 @@
 ﻿#region
 
-using System;
 using Oxide.Core;
 using Oxide.Core.Extensions;
-using Oxide.Core.Logging;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Watcher;
@@ -15,11 +13,7 @@ namespace Oxide.Ext.DllLoader
     // ReSharper disable once UnusedMember.Global
     public sealed class DllLoaderExtension : Extension
     {
-        private DllPluginLoaderController? _pluginLoader;
-#pragma warning disable IDE0052
-        // ReSharper disable once NotAccessedField.Local
-        private DllLoaderWatcherFix? _watcherFix; //Need to make GC not collect it when it shouldn't
-#pragma warning restore IDE0052
+        private readonly DllPluginLoaderController _pluginLoader;
 
         public DllLoaderExtension(ExtensionManager manager) : base(manager)
         {
@@ -33,8 +27,10 @@ namespace Oxide.Ext.DllLoader
 
         ~DllLoaderExtension()
         {
-            _watcherFix = null;
-            _pluginLoader = null;
+            Watcher!.OnPluginSourceChanged -= OnPluginSourceChanged;
+            Watcher.OnPluginRemoved -= OnPluginRemoved;
+            Watcher.OnPluginAdded -= OnPluginAdded;
+            DllLoaderWatcherFix.RemoveWatcher(Watcher);
         }
 
 
@@ -47,19 +43,12 @@ namespace Oxide.Ext.DllLoader
         public override void LoadPluginWatchers(string pluginDirectory)
         {
             Watcher = new FSWatcher(pluginDirectory, "*.dll");
-            try
-            {
-                _watcherFix = new DllLoaderWatcherFix(Name, Watcher, _pluginLoader!._mapper);
-            }
-            catch (Exception ex)
-            {
-                Interface.Oxide.LogException("Fail to file watcher, it will not work properly", ex);
-                return;
-            }
+            DllLoaderWatcherFix.AddWatcher(Watcher, _pluginLoader!._mapper);
 
-            Manager.RegisterPluginChangeWatcher(Watcher);
+            Watcher.OnPluginAdded += OnPluginAdded;
+            Watcher.OnPluginRemoved += OnPluginRemoved;
+            Watcher.OnPluginSourceChanged += OnPluginSourceChanged;
         }
-
 
         public override void OnModLoad()
         {
@@ -78,6 +67,30 @@ namespace Oxide.Ext.DllLoader
 
             foreach (var plugin in _pluginLoader.OnFramePlugins)
                 plugin.CallHook(nameof(OnFrame), delta);
+        }
+
+        private void OnPluginAdded(string assemblyName)
+        {
+#if DEBUG
+            Interface.Oxide.LogDebug("Assembly({0}) added, changed! Loading plugins...", assemblyName);
+#endif
+            _pluginLoader.AddAssembly(assemblyName);
+        }
+
+        private void OnPluginRemoved(string assemblyName)
+        {
+#if DEBUG
+            Interface.Oxide.LogDebug("Assembly({0}) removed. Unloading plugins...", assemblyName);
+#endif
+            _pluginLoader.RemoveAssembly(assemblyName);
+        }
+
+        private void OnPluginSourceChanged(string assemblyName)
+        {
+#if DEBUG
+            Interface.Oxide.LogDebug("Assembly({0}) changed! Reloading...", assemblyName);
+#endif
+            _pluginLoader.ReloadAssembly(assemblyName);
         }
     }
 }

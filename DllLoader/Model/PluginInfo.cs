@@ -2,7 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Xml.Linq;
+using HarmonyLib;
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
 
@@ -10,69 +13,77 @@ using Oxide.Plugins;
 
 namespace Oxide.Ext.DllLoader.Model
 {
-    public class PluginInfo : IEquatable<PluginInfo>
+    public class PluginInfo(Type type, string filePath) : IDisposable, IEquatable<PluginInfo>
     {
-        private readonly HashSet<string> _referencedPlugins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        public readonly string PluginFile;
-        public readonly Type PluginType;
-        public Plugin? Plugin;
+        public readonly string PluginFile = filePath;
+        public readonly string PluginName = type.Name;
+        public readonly Type PluginType = type;
 
+        private Dictionary<string, Type>? _namePluginReferences;
+        private Plugin? _plugin;
 
-        public PluginInfo(Type pluginType, string filePath)
+        private Dictionary<string, Type> NamePluginReferences => _namePluginReferences ??= GetReferencesInPlugin();
+        public bool IsPluginLoaded => _plugin != null;
+
+        public Plugin Plugin
         {
-            PluginFile = filePath;
-            PluginType = pluginType;
-            ScanForReferencedPlugins();
+            get
+            {
+                if (_plugin != null)
+                    return _plugin;
+
+
+                return _plugin ??= (Plugin)Activator.CreateInstance(PluginType);
+            }
         }
 
 
-        public string PluginName => PluginType.Name;
-        public bool IsPluginLoaded => Plugin != null;
-        public IReadOnlyCollection<string> ReferencedPlugins => _referencedPlugins;
+        private Dictionary<string, Type> GetReferencesInPlugin()
+        {
+            var pluginRefFields = AccessTools.GetDeclaredFields(PluginType);
+            return pluginRefFields
+                .AsParallel()
+                .Select<FieldInfo, (string?, Type)> (f =>
+                {
+                    var attribute = f.GetCustomAttribute<PluginReferenceAttribute>(true);
+                    var name = attribute != null ? attribute?.Name ?? f.Name : null;
+                    return (name, f.FieldType);
+                })
+                .Where(f => f.Item1 != null)
+                .ToDictionary(n => n.Item1!, t => t.Item2);
+        }
+
+
+        #region BasicImplementations
+
+        public void Dispose()
+        {
+            _namePluginReferences?.Clear();
+            _namePluginReferences = null;
+            _plugin = null;
+        }
 
         public bool Equals(PluginInfo other)
         {
             if (other is null)
                 return false;
 
-            return ReferenceEquals(this, other) ||
-                   PluginName.Equals(other.PluginName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        ~PluginInfo()
-        {
-            _referencedPlugins.Clear();
-        }
-
-
-        private void ScanForReferencedPlugins()
-        {
-            var pluginRefFields = PluginType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-            foreach (var field in pluginRefFields)
-            {
-                var pluginRefAttributes = field.GetCustomAttributes<PluginReferenceAttribute>(true);
-                foreach (var attribute in pluginRefAttributes)
-                    _referencedPlugins.Add(attribute.Name ?? field.Name);
-            }
+            return ReferenceEquals(this, other) || PluginName.Equals(other.PluginName);
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is null)
+            if (obj is not PluginInfo pluginInfo)
                 return false;
 
-            if (ReferenceEquals(this, obj))
-                return true;
-
-            if (obj.GetType() != GetType())
-                return false;
-
-            return Equals((PluginInfo)obj);
+            return Equals(pluginInfo);
         }
 
         public override int GetHashCode()
         {
-            return PluginName != null ? PluginName.GetHashCode() : 0;
+            return PluginName.GetHashCode();
         }
+
+        #endregion
     }
 }

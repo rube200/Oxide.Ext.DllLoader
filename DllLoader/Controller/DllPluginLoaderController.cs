@@ -3,8 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Xml.Linq;
 using Oxide.Core;
+using Oxide.Core.Libraries;
 using Oxide.Core.Plugins;
+using Oxide.Ext.DllLoader.API;
 using Oxide.Ext.DllLoader.Mapper;
 using Oxide.Ext.DllLoader.Model;
 using Oxide.Plugins;
@@ -15,7 +18,7 @@ namespace Oxide.Ext.DllLoader.Controller
 {
     public sealed class DllPluginLoaderController(DllLoaderExtension extension) : PluginLoader
     {
-        internal readonly DllLoaderMapper _mapper = new();
+        internal readonly IDllLoaderMapper _mapper = new DllLoaderMapper();
         internal readonly List<Plugin> OnFramePlugins = [];
 
         public override string FileExtension => ".dll";
@@ -42,113 +45,94 @@ namespace Oxide.Ext.DllLoader.Controller
             return _mapper.ScanDirectoryPlugins(directory);
         }
 
-        private bool CanPluginLoad(string name)
+
+        private bool CanPluginLoad(string pluginName)
         {
-            if (LoadingPlugins.Contains(name))
+            if (LoadingPlugins.Contains(pluginName))
             {
 #if DEBUG
-                Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loading.", name);
+                Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loading.", pluginName);
 #endif
                 return false;
             }
 
-            if (LoadedPlugins.ContainsKey(name))
+            if (LoadedPlugins.ContainsKey(pluginName))
             {
 #if DEBUG
-                Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loaded.", name);
+                Interface.Oxide.LogDebug("Load requested failed, plugin({0}) is already loaded.", pluginName);
 #endif
                 return false;
             }
 
             return true;
         }
-        public override Plugin? Load(string directory, string name)
+
+        public override Plugin? Load(string directory, string pluginName)
         {
 #if DEBUG
-            Interface.Oxide.LogDebug("Loading requested to plugin({0}).", name);
+            Interface.Oxide.LogDebug("Loading requested to plugin({0}).", pluginName);
 #endif
-            if (!CanPluginLoad(name))
+            if (!CanPluginLoad(pluginName))
                 return null;
 
+#if DEBUG
+            Interface.Oxide.LogDebug("Getting assembly info for plugin({0}).", pluginName);
+#endif
+            var assemblyInfo = _mapper.GetAssemblyInfoByPlugin(pluginName);
+            if (assemblyInfo == null)
+            {
+                Interface.Oxide.LogError("Fail to find assembly info for plugin({0}).", pluginName);
+                return null;
+            }
+
+#if DEBUG
+            Interface.Oxide.LogDebug("Plugin({0}) assembly({1}) info found.", pluginName, assemblyInfo.OriginalName);
+#endif
+
+            LoadingPlugins.Add(pluginName);
             try
             {
-#if DEBUG
-                Interface.Oxide.LogDebug("Getting assembly info for plugin({0}).", name);
-#endif
-                var assemblyInfo = _mapper.GetAssemblyInfoByPluginName(name);
-                if (assemblyInfo == null)
+                if (!assemblyInfo.IsAssemblyLoaded && !_mapper.LoadAssembly(assemblyInfo))
                 {
-                    Interface.Oxide.LogError("Fail to find assembly info for plugin({0}).", name);
+                    Interface.Oxide.LogError("Fail to load plugin({0}), assembly({1}) and assembly file({2}) not found.", pluginName, assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
+
+                    var assemblyNameDefinition = assemblyInfo.AssemblyDefinition.Name;
+                    _mapper.RemoveAssemblyInfo(assemblyNameDefinition);
                     return null;
                 }
 
-#if DEBUG
-                Interface.Oxide.LogDebug("Plugin({0}) assembly({1}) info found.", name, assemblyInfo.OriginalName);
-#endif
-                LoadingPlugins.Add(name);
-
-                if (!assemblyInfo.IsAssemblyLoaded && !AssemblyController.LoadAssembly(assemblyInfo, _mapper))
-                {
-                    LoadingPlugins.Remove(name);
-                    Interface.Oxide.LogError(
-                        "Fail to load plugin({0}), assembly({1}) and assembly file({2}) not found.", name,
-                        assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
-
-                    var assemblyDefinition = assemblyInfo.AssemblyDefinition.Name;
-                    _mapper.RemoveAssemblyInfo(assemblyDefinition);
-
-                    return null;
-                }
-
-                var pluginInfo = assemblyInfo.GetPluginInfo(name);
+                var pluginInfo = assemblyInfo.GetPluginInfo(pluginName);
                 if (pluginInfo == null)
                 {
-                    LoadingPlugins.Remove(name);
-                    Interface.Oxide.LogError("Fail to find plugin({0}) in assembly({1}).", name,
-                        assemblyInfo.OriginalName);
+                    Interface.Oxide.LogError("Fail to find plugin({0}) in assembly({1}).", pluginName, assemblyInfo.OriginalName);
                     return null;
                 }
 
                 if (pluginInfo.IsPluginLoaded)
                 {
-                    LoadingPlugins.Remove(name);
-                    LoadedPlugins.Add(name, pluginInfo.Plugin);
+                    LoadedPlugins.Add(pluginName, pluginInfo.Plugin);
                     return pluginInfo.Plugin;
                 }
 
-                Interface.Oxide.NextTick(() => Load(pluginInfo, name));
-                return null;
-            }
-            catch (Exception ex)
-            {
-                LoadingPlugins.Remove(name);
-                PluginErrors[name] = $"Fail to load plugin({name}): {ex}";
-#if DEBUG
-                Interface.Oxide.LogDebug("Exception while loading plugin({0}): {1}", name, ex);
-#endif
-                return null;
-            }
-        }
-
-        private void Load(PluginInfo pluginInfo, string pluginName)
-        {
-            try
-            {
+                //Interface.Oxide.NextTick(() => );//add catch back very similar to this one
 #if DEBUG
                 Interface.Oxide.LogDebug("Loading plugin({0}).", pluginInfo.PluginName);
 #endif
                 Interface.Oxide.UnloadPlugin(pluginInfo.PluginName);
-                pluginInfo.Plugin = InstantiatePlugin(pluginInfo);
+                InstantiatePlugin(pluginInfo);
 
                 if (pluginInfo.IsPluginLoaded)
                     LoadedPlugins[pluginInfo.PluginName] = pluginInfo.Plugin;
+
+                return pluginInfo.Plugin;
             }
             catch (Exception ex)
             {
-                PluginErrors[pluginName] = $"Fail to load plugin({pluginInfo.PluginName}): {ex}";
+                PluginErrors[pluginName] = $"Fail to load plugin({pluginName}): {ex}";
 #if DEBUG
-                Interface.Oxide.LogDebug("Exception while loading plugin({0}) from pluginInfo: {1}", pluginInfo.PluginName, ex);
+                Interface.Oxide.LogDebug("Exception while loading plugin({0}): {1}", pluginName, ex);
 #endif
+                return null;
             }
             finally
             {
@@ -156,41 +140,33 @@ namespace Oxide.Ext.DllLoader.Controller
             }
         }
 
-        private Plugin? InstantiatePlugin(PluginInfo pluginInfo)
+        private void InstantiatePlugin(PluginInfo pluginInfo)
         {
-            Plugin? plugin;
+            Plugin plugin;
             try
             {
-                plugin = Activator.CreateInstance(pluginInfo.PluginType) as Plugin;
+                plugin = pluginInfo.Plugin;
             }
             catch (MissingMethodException ex)
             {
+                PluginErrors[pluginInfo.PluginName] = $"Fail to found constructor to plugin({pluginInfo.PluginName}): {ex}";
                 Interface.Oxide.LogException($"Fail to found constructor to plugin({pluginInfo.PluginName})", ex);
-                return null;
+                return;
             }
             catch (Exception ex)
             {
                 if (ex is TargetInvocationException tex)
                     ex = tex.InnerException;
 
+                PluginErrors[pluginInfo.PluginName] = $"Fail to load plugin({pluginInfo.PluginName}): {ex}";
                 Interface.Oxide.LogException($"Fail to load plugin({pluginInfo.PluginName})", ex);
-                return null;
+                return;
             }
 
             if (plugin == null)
             {
                 Interface.Oxide.LogError("Plugin({0}) failed to load.", pluginInfo.PluginName);
-                return null;
-            }
-
-            foreach (var method in pluginInfo.PluginType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                var hooks = method.GetCustomAttributes(typeof(HookMethodAttribute), true);
-                if (hooks.Length > 0)
-                    continue;
-
-                if (method.Name.Equals("OnFrame"))
-                    OnFramePlugins.Add(plugin);
+                return;
             }
 
             if (plugin is CSharpPlugin csharpPlugin)
@@ -198,9 +174,12 @@ namespace Oxide.Ext.DllLoader.Controller
                 if (!csharpPlugin.SetPluginInfo(pluginInfo.PluginName, pluginInfo.PluginFile))
                 {
                     Interface.Oxide.LogError("Fail to set plugin info for plugin({0})", pluginInfo.PluginName);
-                    return null;
+                    csharpPlugin.SetFailState("Fail to set plugin info");
+                    return;
                 }
 
+                if (csharpPlugin.HookedOnFrame)
+                    OnFramePlugins.Add(csharpPlugin);
                 csharpPlugin.Watcher = extension.Watcher;
             }
 
@@ -208,15 +187,29 @@ namespace Oxide.Ext.DllLoader.Controller
             if (!Interface.Oxide.PluginLoaded(plugin))
             {
                 Interface.Oxide.LogError("Plugin({0}) failed to load(oxide).", pluginInfo.PluginName);
-                return null;
+                return;
             }
-
-            return plugin;
         }
+
 
         public override void Unloading(Plugin plugin)
         {
             LoadedPlugins.Remove(plugin.Name);
+        }
+
+        internal void AddAssembly(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void RemoveAssembly(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void ReloadAssembly(string name)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using DllLoader.Test.Libs;
 using Oxide.Core;
+using Oxide.Core.Plugins;
 using Oxide.Plugins;
 using System;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ namespace DllLoader.Tester
             Puts("======== Checking plugins count ========");
             NumberOfTestPlugins.AssertEqual(GetPluginsCount());
 
-            await CheckLoaded();
+            CheckLoaded();
 
             Puts("======== Choosing {0} to unload ========", NumberOfPluginsToTest);
             var pluginsToTest = GetRandomPlugins();
@@ -60,7 +61,8 @@ namespace DllLoader.Tester
                 }
             }
 
-            await CheckLoaded(pluginsToTest);
+            await Task.Delay(100);
+            CheckLoaded(pluginsToTest);
 
             Puts("======== Loading plugins ========");
             foreach (var pluginName in pluginsToTest)
@@ -72,7 +74,7 @@ namespace DllLoader.Tester
                 }
             }
 
-            await CheckLoaded();
+            await CheckLoadedWithDelay();
 
             Puts("======== Choosing {0} to reload ========", NumberOfPluginsToTest);
             pluginsToTest = GetRandomPlugins();
@@ -87,31 +89,36 @@ namespace DllLoader.Tester
                 }
             }
 
-            await CheckLoaded();
+            await CheckLoadedWithDelay();
         }
 
-        private async Task CheckLoaded(ICollection<string>? pluginsUnloaded = null)
+        private async Task CheckLoadedWithDelay()
         {
-            await Task.Delay(1000);
+            await Task.Delay(5000);
+            CheckLoaded();
+            await Task.Delay(5000);
+        }
 
+        private void CheckLoaded(ICollection<string>? pluginsUnloaded = null)
+        {
             Puts("======== Checking plugins loaded ========"); 
             foreach (var plugin in Manager.GetPlugins())
             {
                 if (plugin is not DepTestPlugin depTestPlugin)
                     continue;
 
-                var isDepUnloaded = pluginsUnloaded?.Contains(depTestPlugin.PuginName) ?? false;
+                var isDepUnloaded = pluginsUnloaded?.Contains(depTestPlugin.PluginName) ?? false;
                 depTestPlugin.CheckPluginLoaded(isDepUnloaded);
+                if (isDepUnloaded)
+                    AssertUtils.AssertNull(depTestPlugin.DepPlugin);
             }
-
-            await Task.Delay(1000);
         }
 
         private ICollection<string> GetRandomPlugins()
         {
             var plugins = Manager.GetPlugins();
             var pluginsToTest = new List<string>();
-            for (int i = 0; i <= NumberOfPluginsToTest; i++)
+            for (int i = 0; i < NumberOfPluginsToTest; i++)
             { 
                 var pluginIndex = Random.Range(plugins.Count());
                 var plugin = plugins.ElementAt(pluginIndex);
@@ -140,6 +147,12 @@ namespace DllLoader.Tester
                 return true;
 
             throw new Exception(string.Format(msg, expected, current));
+        }
+
+        internal static void AssertNull(Plugin? plugin)
+        {
+            if (plugin != null)
+                throw new Exception(string.Format("Plugin ({0}) is not null", plugin.Name));
         }
     }
 }

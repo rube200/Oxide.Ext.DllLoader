@@ -1,9 +1,7 @@
 ﻿#region
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using HarmonyLib;
 using Oxide.Core;
 using Oxide.Core.Plugins.Watchers;
@@ -14,197 +12,170 @@ using Oxide.Ext.DllLoader.Model;
 
 namespace Oxide.Ext.DllLoader.Watcher
 {
-    internal class DllLoaderWatcherFix
+    [HarmonyPatch(typeof(FSWatcher))]
+    internal static class DllLoaderWatcherFix
     {
-        private static readonly IDictionary<PluginChangeWatcher, IDllLoaderMapper> _fsWatcherMappers =
-            new Dictionary<PluginChangeWatcher, IDllLoaderMapper>();
+        private static readonly Dictionary<PluginChangeWatcher, IDllLoaderMapper> _fsWatcherMappers = [];
+        private static readonly Dictionary<string, byte> _mappingCount = [];
 
-        private Harmony? _harmonyInstance;
-        private FSWatcher? _watcher;
-
-        public DllLoaderWatcherFix(string name, FSWatcher fsWatcher, IDllLoaderMapper dllMapper)
+        public static void AddWatcher(PluginChangeWatcher watcher, IDllLoaderMapper mapper)
         {
-            _harmonyInstance = new Harmony(name);
-
-            //Plugin add/remove to/from watcher
-            _harmonyInstance.Patch(WatcherAddMappingInfo, WatcherAddMappingPatchInfo);
-            _harmonyInstance.Patch(WatcherRemoveMappingInfo, WatcherRemoveMappingPatchInfo);
-
-            //Watcher fire events
-            _harmonyInstance.Patch(FirePluginAddedInfo, FirePluginAddedPatchInfo);
-            _harmonyInstance.Patch(FirePluginRemovedInfo, FirePluginRemovedPatchInfo);
-            _harmonyInstance.Patch(FirePluginSourceChangedInfo, FirePluginSourceChangedPatchInfo);
-
-            _watcher = fsWatcher;
-            _fsWatcherMappers[_watcher] = dllMapper;
+            _fsWatcherMappers[watcher] = mapper;
         }
 
-        ~DllLoaderWatcherFix()
+        public static void RemoveWatcher(PluginChangeWatcher watcher)
         {
-            _fsWatcherMappers.Remove(_watcher!);
-            _watcher = null;
-
-            _harmonyInstance!.UnpatchAll(_harmonyInstance.Id);
-            _harmonyInstance = null;
+            _fsWatcherMappers.Remove(watcher);
         }
 
-        #region MethodsInfo
+        #region AddMappingPatch
 
-        //Plugin add/remove to/from watcher
-        private static readonly MethodInfo WatcherAddMappingInfo;
-        private static readonly MethodInfo WatcherRemoveMappingInfo;
-        private static readonly HarmonyMethod WatcherAddMappingPatchInfo;
-        private static readonly HarmonyMethod WatcherRemoveMappingPatchInfo;
-
-        //Watcher fire events
-        private static readonly MethodInfo FirePluginAddedInfo;
-        private static readonly MethodInfo FirePluginRemovedInfo;
-        private static readonly MethodInfo FirePluginSourceChangedInfo;
-
-        private static readonly HarmonyMethod FirePluginAddedPatchInfo;
-        private static readonly HarmonyMethod FirePluginRemovedPatchInfo;
-        private static readonly HarmonyMethod FirePluginSourceChangedPatchInfo;
-
-        private static readonly FieldInfo OnPluginAddedEvent;
-        private static readonly FieldInfo OnPluginRemovedEvent;
-        private static readonly FieldInfo OnPluginSourceChangedEvent;
-
-
-        static DllLoaderWatcherFix()
+        [HarmonyPatch(nameof(FSWatcher.AddMapping))]
+        [HarmonyPrefix]
+        private static bool WatcherAddMapping(FSWatcher __instance, string name, ICollection<string> ___watchedPlugins)
         {
-            var fsWatcherType = typeof(FSWatcher);
-            WatcherAddMappingInfo = fsWatcherType.GetMethod(nameof(FSWatcher.AddMapping));
-            WatcherRemoveMappingInfo = fsWatcherType.GetMethod(nameof(FSWatcher.RemoveMapping));
+            var assemblyInfo = GetAssemblyFromPluginName(__instance, name);
+            if (assemblyInfo == null)
+                return true;
 
-            var dllWatcherFixType = typeof(DllLoaderWatcherFix);
-            const BindingFlags staticPrivateBinds = BindingFlags.Static | BindingFlags.NonPublic;
-            WatcherAddMappingPatchInfo =
-                new HarmonyMethod(dllWatcherFixType.GetMethod(nameof(WatcherAddMapping), staticPrivateBinds));
-            WatcherRemoveMappingPatchInfo =
-                new HarmonyMethod(dllWatcherFixType.GetMethod(nameof(WatcherRemoveMapping), staticPrivateBinds));
+            var filename = Path.GetFileNameWithoutExtension(assemblyInfo.AssemblyFile);
+            if (_mappingCount.ContainsKey(filename))
+            {
+                _mappingCount[filename]++;
+            }
+            else
+            {
+                _mappingCount.Add(filename, 1);
+            }
 
-
-            //Watcher fire events
-            const BindingFlags instancePrivateBinds = BindingFlags.Instance | BindingFlags.NonPublic;
-            var pluginChangeWatcherType = typeof(PluginChangeWatcher);
-            FirePluginAddedInfo = pluginChangeWatcherType.GetMethod("FirePluginAdded", instancePrivateBinds);
-            FirePluginRemovedInfo = pluginChangeWatcherType.GetMethod("FirePluginRemoved", instancePrivateBinds);
-            FirePluginSourceChangedInfo =
-                pluginChangeWatcherType.GetMethod("FirePluginSourceChanged", instancePrivateBinds);
-
-            FirePluginAddedPatchInfo =
-                new HarmonyMethod(dllWatcherFixType.GetMethod(nameof(FirePluginAdded), staticPrivateBinds));
-            FirePluginRemovedPatchInfo =
-                new HarmonyMethod(dllWatcherFixType.GetMethod(nameof(FirePluginRemoved), staticPrivateBinds));
-            FirePluginSourceChangedPatchInfo =
-                new HarmonyMethod(dllWatcherFixType.GetMethod(nameof(FirePluginSourceChanged), staticPrivateBinds));
-
-            OnPluginAddedEvent =
-                pluginChangeWatcherType.GetField(nameof(PluginChangeWatcher.OnPluginAdded), instancePrivateBinds);
-            OnPluginRemovedEvent =
-                pluginChangeWatcherType.GetField(nameof(PluginChangeWatcher.OnPluginRemoved), instancePrivateBinds);
-            OnPluginSourceChangedEvent =
-                pluginChangeWatcherType.GetField(nameof(PluginChangeWatcher.OnPluginSourceChanged),
-                    instancePrivateBinds);
+            ___watchedPlugins.Add(filename);
+            return false;
         }
 
         #endregion
 
-        #region PluginWatcherColletion
+        #region RemoveMappingPatch
 
-        private static bool MapPluginNameToAssembly(PluginChangeWatcher __instance, string pluginName,
-            Action<AssemblyInfo> action)
+        [HarmonyPatch(nameof(FSWatcher.RemoveMapping))]
+        [HarmonyPrefix]
+        private static bool WatcherRemoveMapping(FSWatcher __instance, string name, ICollection<string> ___watchedPlugins)
         {
-            if (!_fsWatcherMappers.TryGetValue(__instance, out var mapper))
+            var assemblyInfo = GetAssemblyFromPluginName(__instance, name);
+            if (assemblyInfo == null)
+                return true;
+
+            var filename = Path.GetFileNameWithoutExtension(assemblyInfo.AssemblyFile);
+            var count = _mappingCount[filename];
+            if (count == 1)
+            {
+                _mappingCount[filename] = (byte)(count - 1);
+                ___watchedPlugins.Remove(filename);
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region CommonMappingPatch
+
+        private static AssemblyInfo? GetAssemblyFromPluginName(PluginChangeWatcher watcher, string pluginName)
+        {
+            if (!_fsWatcherMappers.TryGetValue(watcher, out var mapper))
             {
 #if DEBUG
                 Interface.Oxide.LogDebug("No corresponding watcher found({0}), ignoring...", pluginName);
 #endif
-                return true;
+                return null;
             }
 
-            var assemblyInfo = mapper.GetAssemblyInfoByPluginName(pluginName);
+            var assemblyInfo = mapper.GetAssemblyInfoByPlugin(pluginName);
             if (assemblyInfo == null)
             {
                 Interface.Oxide.LogError("Fail to find assembly info for plugin({0}).", pluginName);
-                return true;
+                return null;
             }
 
-            action(assemblyInfo);
-            return false;
+            return assemblyInfo;
         }
-
-        //Since ___watchedPlugins is HashSet(FSWatcher source code) we do not need to check if is in collection
-        // ReSharper disable SuggestBaseTypeForParameter
-        private static bool WatcherAddMapping(FSWatcher __instance, string name, ICollection<string> ___watchedPlugins)
-        {
-            return MapPluginNameToAssembly(__instance, name, assemblyInfo =>
-            {
-                var filename = Path.GetFileNameWithoutExtension(assemblyInfo.AssemblyFile);
-                ___watchedPlugins.Add(filename);
-            });
-        }
-
-        private static bool WatcherRemoveMapping(FSWatcher __instance, string name,
-            ICollection<string> ___watchedPlugins)
-        {
-            return MapPluginNameToAssembly(__instance, name, assemblyInfo =>
-            {
-                var filename = Path.GetFileNameWithoutExtension(assemblyInfo.AssemblyFile);
-                ___watchedPlugins.Remove(filename);
-            });
-        }
-        // ReSharper restore SuggestBaseTypeForParameter
 
         #endregion
 
-        #region WatcherFireEvents
-
-        private static bool FirePluginAdded(PluginChangeWatcher __instance, string name)
+        /*
+        [HarmonyPatch(typeof(PluginChangeWatcher))]
+        private static class DllLoaderPluginChangeWatcherEventsPatch
         {
-            return MapAssemblyNameToEvent(__instance, name, OnPluginAddedEvent);
-        }
+            #region AddedEventPatch
 
-        private static bool FirePluginRemoved(PluginChangeWatcher __instance, string name)
-        {
-            return MapAssemblyNameToEvent(__instance, name, OnPluginRemovedEvent);
-        }
+            private static readonly FieldRef<object, PluginAddEvent> OnPluginAddedEvent = FieldRefAccess<PluginAddEvent>(typeof(PluginChangeWatcher), nameof(PluginChangeWatcher.OnPluginAdded));
 
-        private static bool FirePluginSourceChanged(PluginChangeWatcher __instance, string name)
-        {
-            return MapAssemblyNameToEvent(__instance, name, OnPluginSourceChangedEvent);
-        }
-
-        private static bool MapAssemblyNameToEvent(PluginChangeWatcher __instance, string assemblyName,
-            FieldInfo fieldInfo)
-        {
-            if (!_fsWatcherMappers.TryGetValue(__instance, out var mapper))
+            [HarmonyPatch("FirePluginAdded")]
+            [HarmonyPrefix]
+            private static bool FirePluginAdded(PluginChangeWatcher __instance, string name)
             {
-                Interface.Oxide.LogDebug("No corresponding watcher found, ignoring...");
-                return true;
+                return MapAssemblyNameToEvent(__instance, name, OnPluginAddedEvent(__instance));
             }
 
-            mapper.ScanDirectoryPlugins(Interface.Oxide.PluginDirectory);
-            var assemblyInfo = mapper.GetAssemblyInfoByFile(assemblyName);
-            if (assemblyInfo == null)
+            #endregion
+
+            #region RemovedEventPatch
+
+            private static readonly FieldRef<object, PluginRemoveEvent> OnPluginRemovedEvent = FieldRefAccess<PluginRemoveEvent>(typeof(PluginChangeWatcher), nameof(PluginChangeWatcher.OnPluginRemoved));
+
+            [HarmonyPatch("FirePluginRemoved")]
+            [HarmonyPrefix]
+            private static bool FirePluginRemoved(PluginChangeWatcher __instance, string name)
             {
-                Interface.Oxide.LogError("Fail to find assembly info for ({0}).", assemblyName);
-                return true;
+                return MapAssemblyNameToEvent(__instance, name, OnPluginRemovedEvent(__instance));
             }
 
-            var eventDelegate = (Delegate)fieldInfo.GetValue(__instance);
-            foreach (var pluginName in assemblyInfo.PluginsName)
-                Raise(pluginName, eventDelegate);
+            #endregion
 
-            return false;
-        }
+            #region ChangeEventPatch
 
-        private static void Raise(string pluginName, Delegate eventDelegate)
-        {
-            foreach (var handler in eventDelegate.GetInvocationList())
-                handler.Method.Invoke(handler.Target, new object[] { pluginName });
-        }
+            private static readonly FieldRef<object, PluginChangeEvent> OnPluginSourceChangedEvent = FieldRefAccess<PluginChangeEvent>(typeof(PluginChangeWatcher), nameof(PluginChangeWatcher.OnPluginSourceChanged));
 
-        #endregion
+            [HarmonyPatch("FirePluginSourceChanged")]
+            [HarmonyPrefix]
+            private static bool FirePluginSourceChanged(PluginChangeWatcher __instance, string name)
+            {
+                return MapAssemblyNameToEvent(__instance, name, OnPluginSourceChangedEvent(__instance));
+            }
+
+            #endregion
+
+            #region CommonEventPatch
+
+            private static bool MapAssemblyNameToEvent(PluginChangeWatcher __instance, string assemblyName, Delegate eventDelegate)
+            {
+                if (!_fsWatcherMappers.TryGetValue(__instance, out var mapper))
+                {
+#if DEBUG
+                    Interface.Oxide.LogDebug("No corresponding watcher found, ignoring...");
+#endif
+                    return true;
+                }
+
+                var assemblyInfo = mapper.GetAssemblyInfoByFile(assemblyName);
+                if (assemblyInfo == null)
+                {
+                    Interface.Oxide.LogError("Fail to find assembly info for ({0}).", assemblyName);
+                    return true;
+                }
+
+                foreach (var pluginName in assemblyInfo.PluginsName)
+                    Raise(pluginName, eventDelegate);
+
+                return false;
+            }
+
+            private static void Raise(string pluginName, Delegate eventDelegate)
+            {
+                foreach (var handler in eventDelegate.GetInvocationList())
+                    handler.Method.Invoke(handler.Target, [pluginName]);
+            }
+
+            #endregion
+        }*/
     }
 }

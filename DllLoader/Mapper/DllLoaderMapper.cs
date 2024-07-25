@@ -5,11 +5,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Mono.Cecil;
 using Oxide.Core;
+using Oxide.Core.CSharp;
 using Oxide.Ext.DllLoader.API;
-using Oxide.Ext.DllLoader.Controller;
+using Oxide.Ext.DllLoader.Helper;
 using Oxide.Ext.DllLoader.Model;
+using static HarmonyLib.AccessTools;
 
 #endregion
 
@@ -17,25 +20,12 @@ namespace Oxide.Ext.DllLoader.Mapper
 {
     public sealed class DllLoaderMapper : DefaultAssemblyResolver, IDllLoaderMapper
     {
-        private readonly ISet<string> _searchDirs = new HashSet<string>();
-        private readonly IDictionary<string, AssemblyInfo> _assembliesInfoByName =
-            new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<string, AssemblyInfo> _assembliesInfoByFullName =
             new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
 
-        public void RemoveAssemblyInfoByFullName(string assemblyName)
-        {
-            _assembliesInfoByFullName.Remove(assemblyName);
-        }
-
-        public void RemoveAssemblyInfo(AssemblyNameDefinition assemblyName)
-        {
-            _assembliesInfoByName.Remove(assemblyName.Name);
-            RemoveAssemblyInfoByFullName(assemblyName.FullName);
-        }
-
-
         #region AssemblyResolver
+
+        private readonly ISet<string> _searchResolverDirs = new HashSet<string>();
 
         public void OnModLoad()
         {
@@ -48,19 +38,23 @@ namespace Oxide.Ext.DllLoader.Mapper
             RemoveSearchDirectory(Interface.Oxide.ExtensionDirectory);
             AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolve;
             _assembliesInfoByFullName.Clear();
-            _assembliesInfoByName.Clear();
         }
 
         private Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            var assemblyInfo = GetAssemblyInfoByFullName(args.Name);
-            if (assemblyInfo == null)
-                return null;
+            try
+            {
+                var assemblyName = AssemblyNameReference.Parse(args.Name);
+                var assemblyInfo = GetAssemblyInfoFromNameReference(assemblyName);
+                if (assemblyInfo == null)
+                    return null;
 
-            if (assemblyInfo.IsAssemblyLoaded || AssemblyController.LoadAssembly(assemblyInfo, this))
-                return assemblyInfo.Assembly;
-
-            RemoveAssemblyInfoByFullName(args.Name);
+                if (assemblyInfo.IsAssemblyLoaded || LoadAssembly(assemblyInfo))
+                    return assemblyInfo.Assembly;
+            }
+            catch (Exception)
+            { }
+            
             return null;
         }
 
@@ -68,7 +62,7 @@ namespace Oxide.Ext.DllLoader.Mapper
         {
             if (!name.FullName.StartsWith("Oxide.") && !name.Name.StartsWith("Oxide."))
             {
-                var assemblyInfo = GetAssemblyInfoByFullName(name.FullName) ?? GetAssemblyInfoByName(name.Name);
+                var assemblyInfo = GetAssemblyInfoFromNameReference(name);
                 if (assemblyInfo != null)
                     return assemblyInfo.AssemblyDefinition;
             }
@@ -76,25 +70,29 @@ namespace Oxide.Ext.DllLoader.Mapper
             return base.Resolve(name);
         }
 
-        #endregion
+        private void AddDirectoryToResolver(string directory)
+        {
+            if (!_searchResolverDirs.Contains(directory))
+            {
+                _searchResolverDirs.Add(directory);
+                AddSearchDirectory(directory);
+            }
+        }
 
+        #endregion
 
         #region ScanDiretory
 
         public IEnumerable<string> ScanDirectoryPlugins(string directory)
         {
-            if (!_searchDirs.Contains(directory))
-            {
-                _searchDirs.Add(directory);
-                AddSearchDirectory(directory);
-            }
-
+            AddDirectoryToResolver(directory);
             ScanAndRegisterAssemblies(directory);
+
 #if DEBUG
-            Interface.Oxide.LogDebug("Total assemblies registered({0}).", _assembliesInfoByName.Count);
+            Interface.Oxide.LogDebug("Total assemblies registered({0}).", _assembliesInfoByFullName.Count);
 #endif
 
-            var plugins = _assembliesInfoByName.Values.SelectMany(ai => ai.PluginsName).ToArray();
+            var plugins = _assembliesInfoByFullName.Values.SelectMany(ai => ai.PluginsName).ToArray();
 #if DEBUG
             Interface.Oxide.LogDebug("Total plugins registered({0}).", plugins.Length);
 #endif
@@ -112,72 +110,76 @@ namespace Oxide.Ext.DllLoader.Mapper
                 return;
             }
 
-            var assemblies = new HashSet<AssemblyInfo>();
             var dirFiles = new DirectoryInfo(directory).GetFiles("*.dll", SearchOption.TopDirectoryOnly);
-            foreach (var file in dirFiles)
+            dirFiles.Do(RegisterAssemblyFromFile);
+        }
+
+        private static readonly FieldRef<object, IDictionary<string, AssemblyDefinition>> Cache = FieldRefAccess<IDictionary<string, AssemblyDefinition>>(typeof(DllLoaderMapper), "cache");
+        private void RegisterAssemblyFromFile(FileInfo file)
+        {
+#if DEBUG
+            Interface.Oxide.LogDebug("Found file({0}) in directory({1}).", file.Name, file.DirectoryName);
+#endif
+            if ((file.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
             {
-#if DEBUG
-                Interface.Oxide.LogDebug("Found file({0}) in directory({1}).", file.Name, directory);
-#endif
-                if ((file.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
-                {
-                    Interface.Oxide.LogInfo("Ignoring file({0}), marked as hidden.", file.Name);
-                    continue;
-                }
-
-                var assemblyName = AssemblyController.GetAssemblyNameFromFile(file.FullName);
-                var assemblyInfo = GetAssemblyInfoByFullName(assemblyName.FullName) ?? GetAssemblyInfoByName(assemblyName.Name);
-                if (assemblyInfo != null)
-                {
-                    if (assemblyInfo.LastWriteTimeUtc >= file.LastWriteTimeUtc)
-                    {
-#if DEBUG
-                        Interface.Oxide.LogDebug("Assembly({0}) already registered.", file.FullName);
-#endif
-                        continue;
-                    }
-
-#if DEBUG
-                    Interface.Oxide.LogDebug("Assembly({0}) already registered, but need to be reloaded.",
-                        file.FullName);
-#endif
-                }
-
-                assemblyInfo = AssemblyController.LoadAssemblyInfo(file.FullName, file.LastWriteTimeUtc, this);
-                if (assemblyInfo == null)
-                {
-                    Interface.Oxide.LogError("Fail to load assembly({0})", file.FullName);
-                    continue;
-                }
-
-#if DEBUG
-                Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).",
-                    assemblyInfo.OriginalName, file.Name, directory);
-#endif
-
-                _assembliesInfoByName[assemblyName.Name] = assemblyInfo;
-                _assembliesInfoByFullName[assemblyName.FullName] = assemblyInfo;
-
-                assemblies.Add(assemblyInfo);
-                RegisterAssembly(assemblyInfo.AssemblyDefinition);
+                Interface.Oxide.LogInfo("Ignoring file({0}), marked as hidden.", file.Name);
+                return;
             }
 
-            foreach (var assembly in assemblies)
-                AssemblyController.RegisterAssemblyPlugins(assembly);
+            var assemblyDefinition = GetAssemblyDefinitionFromFile(file.FullName);
+            var assemblyDefinitionName = assemblyDefinition.Name;
+
+            var assemblyInfo = GetAssemblyInfoFromNameReference(assemblyDefinitionName);
+            if (assemblyInfo != null)
+            {
+#if DEBUG
+                Interface.Oxide.LogDebug("Assembly({0}) already registered.", file.FullName);
+#endif
+                return;
+            }
+
+            assemblyInfo = new AssemblyInfo(assemblyDefinition, file.FullName);
+            if (assemblyInfo == null)
+            {
+                Interface.Oxide.LogError("Fail to load assembly({0})", file.FullName);
+                return;
+            }
+
+#if DEBUG
+            Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).", assemblyInfo.OriginalName, file.Name, file.Directory);
+#endif
+
+            _assembliesInfoByFullName[assemblyDefinition.FullName] = assemblyInfo;
+            Cache(this)[assemblyDefinitionName.FullName] = assemblyInfo.AssemblyDefinition;
         }
 
         #endregion
 
-
         #region Getters
 
-        public AssemblyInfo? GetAssemblyInfoByFullName(string name)
+        public static AssemblyDefinition GetAssemblyDefinitionFromFile(string filepath, IAssemblyResolver? assemblyResolver = null)
         {
-            if (_assembliesInfoByFullName.TryGetValue(name, out var assemblyInfo))
+            return AssemblyDefinition.ReadAssembly(filepath, new ReaderParameters { AssemblyResolver = assemblyResolver });
+        }
+
+        public AssemblyInfo? GetAssemblyInfoFromNameReference(AssemblyNameReference assemblyNameReference)
+        {
+            if (_assembliesInfoByFullName.TryGetValue(assemblyNameReference.FullName, out var assemblyInfo))
                 return assemblyInfo;
 
             return null;
         }
+
+        public AssemblyInfo GetAssemblyInfoByPlugin(string pluginName)
+        {
+            return _assembliesInfoByFullName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.ContainsPlugin(pluginName));
+        }
+
+
+
+
+        /*
+
 
         public AssemblyInfo? GetAssemblyInfoByName(string name)
         {
@@ -192,17 +194,67 @@ namespace Oxide.Ext.DllLoader.Mapper
             return _assembliesInfoByName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.IsFile(filename));
         }
 
-        public AssemblyInfo GetAssemblyInfoByPluginName(string name)
-        {
-            return _assembliesInfoByName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.ContainsPlugin(name));
-        }
+
 
         public PluginInfo GetPluginInfoByName(string pluginName)
         {
             return _assembliesInfoByName.Values.Select(assemblyInfo => assemblyInfo.GetPluginInfo(pluginName))
                 .FirstOrDefault(pluginInfo => pluginInfo != null);
-        }
+        }*/
 
         #endregion
+
+        public bool LoadAssembly(AssemblyInfo assemblyInfo)
+        {
+#if DEBUG
+            Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
+#endif
+            if (!File.Exists(assemblyInfo.AssemblyFile))
+            {
+                Interface.Oxide.LogError("Fail to load assembly({0}), file({1}) does not exist.",
+                    assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
+                return false;
+            }
+
+            ApplyPatches(assemblyInfo);
+            return true;
+        }
+
+        public void ApplyPatches(AssemblyInfo assemblyInfo)
+        {
+            var assemblyDefinition = assemblyInfo.AssemblyDefinition;
+            var originalName = assemblyDefinition.Name.Name;
+#if DEBUG
+            Interface.Oxide.LogDebug("Patching assembly({0})...", originalName);
+            Interface.Oxide.LogDebug("Patching assembly name...");
+#endif
+            assemblyDefinition.Name.Name = $"{assemblyDefinition.Name.Name}-{DateTime.UtcNow.Ticks}";
+#if DEBUG
+            Interface.Oxide.LogDebug("Patch name complete. New name({0}) | Old name({1}).", assemblyDefinition.Name.Name, originalName);
+#endif
+
+            if (assemblyInfo.PluginsName.Count > 0)
+            {
+#if DEBUG
+                Interface.Oxide.LogDebug("Patching assembly oxide...");
+#endif
+                var pluginTypes = assemblyDefinition.GetPluginTypes();
+                foreach (var pluginType in pluginTypes)
+                    _ = new DirectCallMethod(pluginType.Module, pluginType, new ReaderParameters { AssemblyResolver = this });
+
+#if DEBUG
+                Interface.Oxide.LogDebug("Patch oxide complete.");
+#endif
+            }
+
+#if DEBUG
+            Interface.Oxide.LogDebug("All patches to assembly({0}) are completed.", originalName);
+#endif
+        }
+
+        public bool RemoveAssemblyInfo(AssemblyNameReference assemblyNameReference)
+        {
+            return _assembliesInfoByFullName.Remove(assemblyNameReference.FullName);
+        }
     }
 }
