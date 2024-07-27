@@ -14,11 +14,7 @@ namespace Oxide.Ext.DllLoader.API
 
         AssemblyInfo GetAssemblyInfoByPlugin(string pluginName);
 
-        IReadOnlyCollection<PluginInfo> GetRegisteredPlugins();
-
-        bool LoadAssembly(AssemblyInfo assemblyInfo);
-
-        bool RemoveAssemblyInfo(AssemblyNameReference assemblyNameReference);
+        bool RemoveAssemblyInfo(string assemblyName);
 
         IEnumerable<string> ScanDirectoryPlugins(string directory);
 

@@ -5,6 +5,7 @@ using Oxide.Core;
 using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
+using Oxide.Ext.DllLoader.Model;
 using Oxide.Ext.DllLoader.Watcher;
 using System;
 
@@ -76,19 +77,29 @@ namespace Oxide.Ext.DllLoader
 
         private void OnPluginAdded(string assemblyName)
         {
+            OnPluginAdded(assemblyName, "load");
+        }
+
+        private void OnPluginAdded(string assemblyName, string eventName)
+        {
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file added. Loading plugins...", assemblyName);
 #endif
             _pluginLoader.Mapper.ScanAndRegisterAssemblies(Interface.Oxide.PluginDirectory);
-            ExecuteAssemblyEvent("load", assemblyName, Interface.Oxide.LoadPlugin);
+            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.LoadPlugin);
         }
 
         private void OnPluginRemoved(string assemblyName)
         {
+            OnPluginRemoved(assemblyName, "unload");
+        }
+
+        private void OnPluginRemoved(string assemblyName, string eventName)
+        {
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file removed. Unloading plugins...", assemblyName);
 #endif
-            ExecuteAssemblyEvent("unload", assemblyName, Interface.Oxide.UnloadPlugin);
+            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.UnloadPlugin, assemblyInfo => _pluginLoader.Mapper.RemoveAssemblyInfo(assemblyInfo.OriginalName));
         }
 
         private void OnPluginSourceChanged(string assemblyName)
@@ -96,10 +107,11 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) fille changed! Reloading plugins...", assemblyName);
 #endif
-            ExecuteAssemblyEvent("reload", assemblyName, Interface.Oxide.ReloadPlugin);
+            OnPluginRemoved(assemblyName, "unload");
+            OnPluginAdded(assemblyName, "load");
         }
 
-        private void ExecuteAssemblyEvent(string eventName, string assemblyName, Func<string, bool> action)
+        private void ExecuteAssemblyEvent(string eventName, string assemblyName, Func<string, bool> eventAction, Action<AssemblyInfo>? afterAction = null)
         {
             var assemblyInfo = _pluginLoader.Mapper.GetAssemblyInfoByFilename(assemblyName);
             if (assemblyInfo == null)
@@ -109,7 +121,9 @@ namespace Oxide.Ext.DllLoader
             }
 
             foreach (var pluginName in assemblyInfo.PluginsName)
-                action(pluginName);
+                eventAction(pluginName);
+
+            afterAction?.Invoke(assemblyInfo);
         }
     }
 }

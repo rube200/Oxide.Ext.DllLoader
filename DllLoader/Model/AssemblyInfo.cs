@@ -27,7 +27,6 @@ namespace Oxide.Ext.DllLoader.Model
 
         public bool IsAssemblyLoaded => _assembly != null;
         private Dictionary<string, PluginInfo> NamePluginInfo => _namePluginInfo ??= GetPluginsInAssembly();
-        public IReadOnlyCollection<PluginInfo> PluginsInfo => NamePluginInfo.Values;
         public IReadOnlyCollection<string> PluginsName => NamePluginInfo.Keys;
 
         public Assembly Assembly
