@@ -40,6 +40,12 @@ namespace Oxide.Ext.DllLoader.Model
             }
         }
 
+        internal void MarkDirty()
+        {
+            _pluginReferences?.Clear();
+            _pluginReferences = null;
+            _plugin = null;
+        }
 
         private List<string> GetReferencesInPlugin()
         {

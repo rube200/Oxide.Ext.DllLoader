@@ -10,11 +10,9 @@ namespace Oxide.Ext.DllLoader.API
 {
     public interface IDllLoaderMapper : IAssemblyResolver
     {
-        AssemblyInfo GetAssemblyInfoByFilename(string fileName);
+        AssemblyInfo? GetAssemblyInfoByFilename(string fileName);
 
-        AssemblyInfo GetAssemblyInfoByPlugin(string pluginName);
-
-        bool RemoveAssemblyInfo(string assemblyName);
+        AssemblyInfo? GetAssemblyInfoByPlugin(string pluginName);
 
         IEnumerable<string> ScanDirectoryPlugins(string directory);
 

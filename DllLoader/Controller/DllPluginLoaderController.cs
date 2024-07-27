@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.API;
@@ -92,24 +90,16 @@ namespace Oxide.Ext.DllLoader.Controller
         public override void Unloading(Plugin plugin)
         {
             LoadedPlugins.Remove(plugin.Name);
-        }
 
-        public override void Reload(string directory, string name)
-        {
-            /*            CompilablePlugin compilablePlugin = GetCompilablePlugin(directory, name);
-            if (compilablePlugin.IsLoading)
+            var assemblyInfo = Mapper.GetAssemblyInfoByPlugin(plugin.Name);
+            var pluginInfo = assemblyInfo?.GetPluginInfo(plugin.Name);
+            if (pluginInfo == null)
             {
-                Interface.Oxide.RootLogger.WriteDebug(LogType.Warning, LogEvent.Compile, "CSharp", $"Reload requested for plugin which is already loading: {compilablePlugin.Name}");
+                Interface.Oxide.LogError("Plugin({0}) could not be unloaded correctly.", plugin.Name);
                 return;
             }
 
-            // Attempt to compile the plugin before unloading the old version
-            Load(compilablePlugin);*/
-            //todo
-            //a bit more of work need to be done where
-            //we need to invalidate old data first
-            Console.WriteLine("RRRRRRRRRRRRRRRRRRRRRRRRRReload " + directory + " " + name);
-            base.Reload(directory, name);
+            pluginInfo.MarkDirty();
         }
 
         #endregion

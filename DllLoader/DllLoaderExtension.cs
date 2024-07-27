@@ -99,7 +99,7 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file removed. Unloading plugins...", assemblyName);
 #endif
-            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.UnloadPlugin, assemblyInfo => _pluginLoader.Mapper.RemoveAssemblyInfo(assemblyInfo.OriginalName));
+            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.UnloadPlugin, assemblyInfo => assemblyInfo.MarkDirty());
         }
 
         private void OnPluginSourceChanged(string assemblyName)

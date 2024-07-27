@@ -2,10 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Core.Plugins;
@@ -42,6 +42,12 @@ namespace Oxide.Ext.DllLoader.Model
             }
         }
 
+        internal void MarkDirty()
+        {
+            _namePluginInfo?.Clear();
+            _namePluginInfo = null;
+            _assembly = null;
+        }
 
         public bool ContainsPlugin(string pluginName)
         {
