@@ -19,6 +19,7 @@ namespace Oxide.Ext.DllLoader.Controller
     {
         private readonly IDllLoaderMapperLoadable _mapper = new DllLoaderMapper();
         private readonly List<Plugin> _onFramePlugins = [];
+        private readonly List<string> _pluginsWaitingDep = [];
 
         public IDllLoaderMapper Mapper => _mapper;
         public IReadOnlyCollection<Plugin> OnFramePlugins => _onFramePlugins;
@@ -31,6 +32,7 @@ namespace Oxide.Ext.DllLoader.Controller
 
         public void OnShutdown()
         {
+            _pluginsWaitingDep.Clear();
             _onFramePlugins.Clear();
             _mapper.OnShutdown();
         }
@@ -126,18 +128,19 @@ namespace Oxide.Ext.DllLoader.Controller
             return true;
         }
 
-        private void LoadPlugin(PluginInfo pluginInfo)
+        private bool LoadPlugin(PluginInfo pluginInfo)
         {
             var pluginName = pluginInfo.PluginName;
             if (!pluginInfo.PluginReferences.All(LoadedPlugins.ContainsKey))
             {
-                var referencesLoading = pluginInfo.PluginReferences.Where(LoadingPlugins.Contains);
+                var referencesLoading = pluginInfo.PluginReferences.Where(p => LoadingPlugins.Contains(p) && !_pluginsWaitingDep.Contains(p));
                 if (referencesLoading.Any())
                 {
 #if DEBUG
-                    Interface.Oxide.LogDebug("Plugin({0}) is waiting for dependencies to load: {1}", pluginInfo.PluginName, referencesLoading.ToSentence());
+                    Interface.Oxide.LogDebug("Plugin({0}) is waiting for dependencies to load: {1}", pluginName, referencesLoading.ToSentence());
 #endif
-                    return;
+                    _pluginsWaitingDep.Add(pluginName);
+                    return false;
                 }
             }
 
@@ -148,7 +151,7 @@ namespace Oxide.Ext.DllLoader.Controller
 #endif
                 LoadedPlugins[pluginName] = pluginInfo.Plugin;
                 PluginLoaded(pluginName);
-                return;
+                return true;
             }
 
 #if DEBUG
@@ -159,6 +162,7 @@ namespace Oxide.Ext.DllLoader.Controller
 
             Interface.Oxide.LogInfo("Plugin({0}) loadded successfully.", pluginName);
             PluginLoaded(pluginName);
+            return true;
         }
 
         private void PluginLoaded(string pluginName)
@@ -181,12 +185,14 @@ namespace Oxide.Ext.DllLoader.Controller
                     continue;
                 }
 
+                //we need this check since we copied the list
                 if (LoadingPlugins.Contains(loadingPluginName) && loadingPluginInfo.PluginReferences.Contains(pluginName))
                 {
 #if DEBUG
                     Interface.Oxide.LogDebug("Found dependant plugin({0}) from assembly({1}). Loading it...", pluginName, loadingAssemblyInfo!.OriginalName);
 #endif
-                    LoadPlugin(loadingPluginInfo);
+                    if (LoadPlugin(loadingPluginInfo))
+                        _pluginsWaitingDep.Remove(loadingPluginName);
                 }
             }
         }
