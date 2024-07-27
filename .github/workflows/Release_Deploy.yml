@@ -17,10 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        configuration: [Release, Debug]
         runtime: [linux-x64, win-x64]
+
     env: 
-      build_output_dir: DllLoader/bin/Release/net48/${{ matrix.runtime }}
-      release_artifact_name: DllLoader-${{ matrix.runtime }}.zip
+      build_output_dir: DllLoader/bin/${{ matrix.configuration }}/net48/${{ matrix.runtime }}
+      release_artifact_name: DllLoader-${{ matrix.configuration }}-${{ matrix.runtime }}.zip
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@master
@@ -39,7 +42,7 @@ jobs:
       run: "sed -i \"s#<Version>0.0.0</Version>#<Version>${{ github.event.inputs.version }}</Version>#\" DllLoader/DllLoader.csproj"  
 
     - name: Build Project
-      run: dotnet build DllLoader --configuration Release --no-restore --runtime ${{ matrix.runtime }}
+      run: dotnet build DllLoader --configuration ${{ matrix.configuration }} --no-restore --runtime ${{ matrix.runtime }}
 
     - name: Install zip
       run: sudo apt-get install -y zip
