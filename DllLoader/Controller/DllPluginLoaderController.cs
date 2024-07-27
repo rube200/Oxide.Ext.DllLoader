@@ -297,12 +297,7 @@ namespace Oxide.Ext.DllLoader.Controller
 
             var pluginsInfo = _mapper.GetRegisteredPlugins().Where(p => p.PluginReferences.Contains(plugin.Name));
             foreach (var pluginInfo in pluginsInfo)
-            {
-                if (!pluginInfo.PluginReferences.Contains(plugin.Name))
-                    continue;
-
                 Interface.Oxide.UnloadPlugin(pluginInfo.PluginName);
-            }
         }
 
         public override void Reload(string directory, string name)

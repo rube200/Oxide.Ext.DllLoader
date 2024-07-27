@@ -39,7 +39,7 @@ namespace Oxide.Ext.DllLoader.Watcher
                 return true;
 
             var filename = Path.GetFileNameWithoutExtension(assemblyInfo.AssemblyFile);
-            _mappingCount[filename] = _mappingCount.TryGetValue(filename, out var count) ? ++count : (byte)1;
+            _mappingCount[filename] = (byte)(_mappingCount.TryGetValue(filename, out var count) ? count + 1 : 1);
             ___watchedPlugins.Add(filename);
             return false;
         }
