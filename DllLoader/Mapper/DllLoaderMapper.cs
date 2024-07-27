@@ -47,10 +47,7 @@ namespace Oxide.Ext.DllLoader.Mapper
             if (assemblyInfo == null)
                 return null;
 
-            if (assemblyInfo.IsAssemblyLoaded || LoadAssembly(assemblyInfo))
-                return assemblyInfo.Assembly;
-
-            return null;
+            return assemblyInfo.Assembly;
         }
 
         public override AssemblyDefinition Resolve(AssemblyNameReference name)
@@ -147,8 +144,10 @@ namespace Oxide.Ext.DllLoader.Mapper
             }
 
 #if DEBUG
-            Interface.Oxide.LogDebug("Assembly({0}) loaded from file({1}) in directory({2}).", assemblyInfo.OriginalName, file.Name, file.Directory);
+            Interface.Oxide.LogDebug("Trying to load assembly({0}) from file({1}) in directory({2}).", assemblyInfo.OriginalName, file.Name, file.Directory);
 #endif
+            if (!assemblyInfo.IsAssemblyLoaded)
+                ApplyPatches(assemblyInfo);
 
             _assembliesInfoByFullName[assemblyDefinition.FullName] = assemblyInfo;
             Cache(this)[assemblyDefinitionName.FullName] = assemblyInfo.AssemblyDefinition;
@@ -205,24 +204,11 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         #endregion
 
-        public bool LoadAssembly(AssemblyInfo assemblyInfo)
+        public void ApplyPatches(AssemblyInfo assemblyInfo)
         {
 #if DEBUG
             Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
 #endif
-            if (!File.Exists(assemblyInfo.AssemblyFile))
-            {
-                Interface.Oxide.LogError("Fail to load assembly({0}), file({1}) does not exist.",
-                    assemblyInfo.OriginalName, assemblyInfo.AssemblyFile);
-                return false;
-            }
-
-            ApplyPatches(assemblyInfo);
-            return true;
-        }
-
-        public void ApplyPatches(AssemblyInfo assemblyInfo)
-        {
             var assemblyDefinition = assemblyInfo.AssemblyDefinition;
             var originalName = assemblyDefinition.Name.Name;
 #if DEBUG

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Mono.Cecil;
 using Oxide.Core;
 using Oxide.Core.Plugins;
@@ -56,7 +57,7 @@ namespace Oxide.Ext.DllLoader.Model
         private Dictionary<string, PluginInfo> GetPluginsInAssembly()
         {
             var pluginsType = Assembly.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
-            return pluginsType.Select(p => new PluginInfo(p, AssemblyFile)).ToDictionary(p => p.PluginName);
+            return pluginsType.Select(p => new PluginInfo(this, p)).ToDictionary(p => p.PluginName);
         }
 
         public bool IsFile(string fileName)

@@ -14,9 +14,11 @@ using Oxide.Plugins;
 
 namespace Oxide.Ext.DllLoader.Model
 {
-    public class PluginInfo(Type type, string filePath) : IDisposable, IEquatable<PluginInfo>
+    public class PluginInfo(AssemblyInfo assemblyInfo, Type type) : IDisposable, IEquatable<PluginInfo>
     {
-        public readonly string PluginFile = filePath;
+        public readonly AssemblyInfo AssemblyInfo = assemblyInfo;
+        public readonly string AssemblyName = assemblyInfo.OriginalName;
+        public readonly string PluginFile = assemblyInfo.AssemblyFile;
         public readonly string PluginName = type.Name;
         public readonly Type PluginType = type;
 
