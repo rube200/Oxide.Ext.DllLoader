@@ -116,12 +116,12 @@ namespace DllLoader.Tester
 
         private ICollection<string> GetRandomPlugins()
         {
-            var plugins = Manager.GetPlugins();
+            var pluginsCollection = Manager.GetPlugins();
             var pluginsToTest = new List<string>();
             for (int i = 0; i < NumberOfPluginsToTest; i++)
             { 
-                var pluginIndex = Random.Range(plugins.Count());
-                var plugin = plugins.ElementAt(pluginIndex);
+                var pluginIndex = Random.Range(pluginsCollection.Count());
+                var plugin = pluginsCollection.ElementAt(pluginIndex);
                 if (plugin == this || plugin.Author != "Rube200" || pluginsToTest.Contains(plugin.Name))
                 {
                     i--;

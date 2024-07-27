@@ -42,19 +42,14 @@ namespace Oxide.Ext.DllLoader.Mapper
 
         private Assembly? AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            try
-            {
-                var assemblyName = AssemblyNameReference.Parse(args.Name);
-                var assemblyInfo = GetAssemblyInfoFromNameReference(assemblyName);
-                if (assemblyInfo == null)
-                    return null;
+            var assemblyName = AssemblyNameReference.Parse(args.Name);
+            var assemblyInfo = GetAssemblyInfoFromNameReference(assemblyName);
+            if (assemblyInfo == null)
+                return null;
 
-                if (assemblyInfo.IsAssemblyLoaded || LoadAssembly(assemblyInfo))
-                    return assemblyInfo.Assembly;
-            }
-            catch (Exception)
-            { }
-            
+            if (assemblyInfo.IsAssemblyLoaded || LoadAssembly(assemblyInfo))
+                return assemblyInfo.Assembly;
+
             return null;
         }
 

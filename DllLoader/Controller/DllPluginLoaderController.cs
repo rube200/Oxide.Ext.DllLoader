@@ -295,7 +295,7 @@ namespace Oxide.Ext.DllLoader.Controller
         {
             LoadedPlugins.Remove(plugin.Name);
 
-            var pluginsInfo = _mapper.GetRegisteredPlugins();
+            var pluginsInfo = _mapper.GetRegisteredPlugins().Where(p => p.PluginReferences.Contains(plugin.Name));
             foreach (var pluginInfo in pluginsInfo)
             {
                 if (!pluginInfo.PluginReferences.Contains(plugin.Name))
@@ -307,6 +307,15 @@ namespace Oxide.Ext.DllLoader.Controller
 
         public override void Reload(string directory, string name)
         {
+            /*            CompilablePlugin compilablePlugin = GetCompilablePlugin(directory, name);
+            if (compilablePlugin.IsLoading)
+            {
+                Interface.Oxide.RootLogger.WriteDebug(LogType.Warning, LogEvent.Compile, "CSharp", $"Reload requested for plugin which is already loading: {compilablePlugin.Name}");
+                return;
+            }
+
+            // Attempt to compile the plugin before unloading the old version
+            Load(compilablePlugin);*/
             //todo
             //a bit more of work need to be done where
             //we need to invalidate old data first
