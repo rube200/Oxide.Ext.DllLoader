@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 using HarmonyLib;
+using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
 
@@ -19,10 +20,10 @@ namespace Oxide.Ext.DllLoader.Model
         public readonly string PluginName = type.Name;
         public readonly Type PluginType = type;
 
-        private Dictionary<string, Type>? _namePluginReferences;
+        private List<string>? _pluginReferences;
         private Plugin? _plugin;
 
-        private Dictionary<string, Type> NamePluginReferences => _namePluginReferences ??= GetReferencesInPlugin();
+        public IReadOnlyCollection<string> PluginReferences => _pluginReferences ??= GetReferencesInPlugin();
         public bool IsPluginLoaded => _plugin != null;
 
         public Plugin Plugin
@@ -38,19 +39,28 @@ namespace Oxide.Ext.DllLoader.Model
         }
 
 
-        private Dictionary<string, Type> GetReferencesInPlugin()
+        private List<string> GetReferencesInPlugin()
         {
-            var pluginRefFields = AccessTools.GetDeclaredFields(PluginType);
-            return pluginRefFields
+            var pluginRefMembers = AccessTools.GetDeclaredFields(PluginType).OfType<MemberInfo>().Union(AccessTools.GetDeclaredProperties(PluginType));
+            return pluginRefMembers
                 .AsParallel()
-                .Select<FieldInfo, (string?, Type)> (f =>
+                .SelectMany<MemberInfo, string?>(m =>
                 {
-                    var attribute = f.GetCustomAttribute<PluginReferenceAttribute>(true);
-                    var name = attribute != null ? attribute?.Name ?? f.Name : null;
-                    return (name, f.FieldType);
+                    var attribute = m.GetCustomAttribute<PluginReferenceAttribute>(true);
+                    if (attribute == null)
+                        return [];
+
+                    var memberType = m.GetUnderlyingType();
+                    if (memberType!.IsSubclassOf(typeof(Plugin)))
+                        return [memberType.Name, getAttributeName()];
+
+                    return [getAttributeName()];
+
+                    string getAttributeName() => (attribute.Name ?? m.Name);
                 })
-                .Where(f => f.Item1 != null)
-                .ToDictionary(n => n.Item1!, t => t.Item2);
+                .Where(n => n != null)
+                .Cast<string>()
+                .ToList();
         }
 
 
@@ -58,8 +68,8 @@ namespace Oxide.Ext.DllLoader.Model
 
         public void Dispose()
         {
-            _namePluginReferences?.Clear();
-            _namePluginReferences = null;
+            _pluginReferences?.Clear();
+            _pluginReferences = null;
             _plugin = null;
         }
 

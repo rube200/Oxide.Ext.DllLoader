@@ -99,7 +99,7 @@ namespace Oxide.Ext.DllLoader.Mapper
             return plugins;
         }
 
-        private void ScanAndRegisterAssemblies(string directory)
+        public void ScanAndRegisterAssemblies(string directory)
         {
 #if DEBUG
             Interface.Oxide.LogDebug("Scanning directory({0}) for assemblies...", directory);
@@ -115,7 +115,7 @@ namespace Oxide.Ext.DllLoader.Mapper
         }
 
         private static readonly FieldRef<object, IDictionary<string, AssemblyDefinition>> Cache = FieldRefAccess<IDictionary<string, AssemblyDefinition>>(typeof(DllLoaderMapper), "cache");
-        public bool RegisterAssemblyFromFile(FileInfo file)
+        private bool RegisterAssemblyFromFile(FileInfo file)
         {
             if (!file.Exists)
             {
@@ -182,9 +182,15 @@ namespace Oxide.Ext.DllLoader.Mapper
             return _assembliesInfoByFullName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.ContainsPlugin(pluginName));
         }
 
+        public AssemblyInfo GetAssemblyInfoByFilename(string fileName)
+        {
+            return _assembliesInfoByFullName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.IsFile(fileName));
+        }
 
-
-
+        public IReadOnlyCollection<PluginInfo> GetRegisteredPlugins()
+        {
+            return _assembliesInfoByFullName.Values.SelectMany(a => a.PluginsInfo).ToList();
+        }
         /*
 
 
@@ -195,13 +201,6 @@ namespace Oxide.Ext.DllLoader.Mapper
 
             return null;
         }
-
-        public AssemblyInfo GetAssemblyInfoByFile(string filename)
-        {
-            return _assembliesInfoByName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.IsFile(filename));
-        }
-
-
 
         public PluginInfo GetPluginInfoByName(string pluginName)
         {

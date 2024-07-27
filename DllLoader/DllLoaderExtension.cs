@@ -6,6 +6,7 @@ using Oxide.Core.Extensions;
 using Oxide.Core.Plugins.Watchers;
 using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Watcher;
+using System;
 
 #endregion
 
@@ -56,7 +57,9 @@ namespace Oxide.Ext.DllLoader
             Watcher!.OnPluginSourceChanged -= OnPluginSourceChanged;
             Watcher.OnPluginRemoved -= OnPluginRemoved;
             Watcher.OnPluginAdded -= OnPluginAdded;
+
             DllLoaderWatcherFix.RemoveWatcher(Watcher);
+            Watcher = null;
 
             _pluginLoader!.OnShutdown();
             harmony.UnpatchAll(harmony.Id);
@@ -76,7 +79,8 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file added. Loading plugins...", assemblyName);
 #endif
-            _pluginLoader.AddAssembly(assemblyName);
+            _pluginLoader.Mapper.ScanAndRegisterAssemblies(Interface.Oxide.PluginDirectory);
+            ExecuteAssemblyEvent("load", assemblyName, Interface.Oxide.LoadPlugin);
         }
 
         private void OnPluginRemoved(string assemblyName)
@@ -84,7 +88,7 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file removed. Unloading plugins...", assemblyName);
 #endif
-            _pluginLoader.RemoveAssembly(assemblyName);
+            ExecuteAssemblyEvent("unload", assemblyName, Interface.Oxide.UnloadPlugin);
         }
 
         private void OnPluginSourceChanged(string assemblyName)
@@ -92,7 +96,20 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) fille changed! Reloading plugins...", assemblyName);
 #endif
-            _pluginLoader.ReloadAssembly(assemblyName);
+            ExecuteAssemblyEvent("reload", assemblyName, Interface.Oxide.ReloadPlugin);
+        }
+
+        private void ExecuteAssemblyEvent(string eventName, string assemblyName, Func<string, bool> action)
+        {
+            var assemblyInfo = _pluginLoader.Mapper.GetAssemblyInfoByFilename(assemblyName);
+            if (assemblyInfo == null)
+            {
+                Interface.Oxide.LogError("Fail to {0} assembly from file({1}.dll)", eventName, assemblyName);
+                return;
+            }
+
+            foreach (var pluginName in assemblyInfo.PluginsName)
+                action(pluginName);
         }
     }
 }

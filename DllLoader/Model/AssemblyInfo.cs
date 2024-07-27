@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
+using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Ext.DllLoader.Helper;
 
@@ -17,7 +18,8 @@ namespace Oxide.Ext.DllLoader.Model
     {
         public readonly AssemblyDefinition AssemblyDefinition = assemblyDefinition;
         public readonly string AssemblyFile = filePath;
-        public readonly string OriginalName = assemblyDefinition.FullName;
+        public readonly string AssemblyFileNoExt = Path.GetFileNameWithoutExtension(filePath);
+        public readonly string OriginalName = assemblyDefinition.Name.Name;
 
         private Dictionary<string, PluginInfo>? _namePluginInfo;
         private Assembly? _assembly;
@@ -55,6 +57,11 @@ namespace Oxide.Ext.DllLoader.Model
         {
             var pluginsType = Assembly.GetDefinedTypes().GetAssignedTypes(typeof(Plugin));
             return pluginsType.Select(p => new PluginInfo(p, AssemblyFile)).ToDictionary(p => p.PluginName);
+        }
+
+        public bool IsFile(string fileName)
+        {
+            return AssemblyFile.Equals(fileName, StringComparison.OrdinalIgnoreCase) || AssemblyFileNoExt.Equals(fileName, StringComparison.OrdinalIgnoreCase);
         }
 
 
