@@ -1,33 +1,47 @@
-#region
-
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
-
-#endregion
 
 namespace Oxide.Plugins
 {
     [Info("RefABCross", "Rube200", "1.0.0")]
     [Description("RefABCross is for testing")]
-    public class RefABCross : RustPlugin
+    public class RefABCross : DepTestPlugin
     {
-        [PluginReference] private Plugin RefAACross;
+        [PluginReference]
+        Plugin? RefAACross;
 
-        private void Init()
+        public override Plugin? DepPlugin => RefAACross;
+        public override string PluginName => nameof(RefAACross);
+        public override float DelayTime => 5f;
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefAACross != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefAACross != null}");
-                RefAACross?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

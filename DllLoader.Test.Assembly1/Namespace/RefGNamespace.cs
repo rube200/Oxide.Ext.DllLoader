@@ -1,34 +1,47 @@
-#region
-
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
-
-#endregion
 
 namespace Test.Namespace
 {
     [Info("RefGNamespace", "Rube200", "1.0.0")]
     [Description("RefGNamespace is for testing")]
-    public class RefGNamespace : RustPlugin
+    public class RefGNamespace : DepTestPlugin
     {
-        [PluginReference] private Plugin RefHNamespace;
+        [PluginReference]
+        Plugin? RefHNamespace;
 
-        private void Init()
+        public override Plugin? DepPlugin => RefHNamespace;
+        public override string PluginName => nameof(RefHNamespace);
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefHNamespace != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefHNamespace != null}");
-                RefHNamespace?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

@@ -1,10 +1,12 @@
 ﻿using DllLoader.Test.Libs;
+using HarmonyLib;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Oxide.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Random = Oxide.Core.Random;
 
@@ -95,29 +97,32 @@ namespace DllLoader.Tester
         private async Task CheckLoadedWithDelay()
         {
             await Task.Delay(5000);
-            CheckLoaded();
-            await Task.Delay(5000);
+            var time = CheckLoaded();
+            await Task.Delay(2000 + (int)(time * 1000));
         }
 
-        private void CheckLoaded(ICollection<string>? pluginsUnloaded = null)
+        private float CheckLoaded(ICollection<string>? pluginsUnloaded = null)  
         {
+            var maxTime = 3f;
             Puts("======== Checking plugins loaded ========"); 
-            foreach (var plugin in Manager.GetPlugins())
+            foreach (var plugin in Manager.GetPlugins().OfType<DepTestPlugin>())
             {
-                if (plugin is not DepTestPlugin depTestPlugin)
-                    continue;
-
-                var isDepUnloaded = pluginsUnloaded?.Contains(depTestPlugin.PluginName) ?? false;
-                depTestPlugin.CheckPluginLoaded(isDepUnloaded);
+                var isDepUnloaded = pluginsUnloaded?.Contains(plugin.PluginName) ?? false;
+                plugin.CheckPluginLoaded(isDepUnloaded);
                 if (isDepUnloaded)
-                    AssertUtils.AssertNull(depTestPlugin.DepPlugin);
+                    AssertUtils.AssertNull(plugin.DepPlugin);
+
+                maxTime = Math.Max(maxTime, plugin.DelayTime);
             }
+
+            return maxTime;
         }
 
         private ICollection<string> GetRandomPlugins()
         {
             var pluginsCollection = Manager.GetPlugins();
             var pluginsToTest = new List<string>();
+            var pluginsDep = new List<string>();
             for (int i = 0; i < NumberOfPluginsToTest; i++)
             { 
                 var pluginIndex = Random.Range(pluginsCollection.Count());
@@ -129,7 +134,25 @@ namespace DllLoader.Tester
                 }
 
                 pluginsToTest.Add(plugin.Name);
+                var pluginType = pluginsToTest.GetType();
+                AccessTools
+                    .GetDeclaredFields(pluginType)
+                    .OfType<MemberInfo>()
+                    .Union(AccessTools.GetDeclaredProperties(pluginType))
+                    .Do(m =>
+                    {
+                        var attribute = m.GetCustomAttribute<PluginReferenceAttribute>(true);
+                        if (attribute == null)
+                            return;
+
+                        var memberType = m.GetUnderlyingType();
+                        if (!memberType!.IsSubclassOf(typeof(Plugin)))
+                            return;
+
+                        pluginsDep.Add(memberType.Name);
+                    });
             }
+            pluginsToTest.AddRange(pluginsDep);
             return pluginsToTest;
         }
     }

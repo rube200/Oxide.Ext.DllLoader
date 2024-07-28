@@ -1,11 +1,19 @@
 using DllLoader.Test.Libs;
+using Oxide.Core.Plugins;
+using Oxide.Plugins;
 
-namespace Oxide.Plugins
+namespace Test.Namespace
 {
-    [Info("RefPDeepCross", "Rube200", "1.0.0")]
-    [Description("RefPDeepCross is for testing")]
-    public class RefPDeepCross : TestPlugin
+    [Info("RefAWTypeNamespace", "Rube200", "1.0.0")]
+    [Description("RefAWTypeNamespace is for testing")]
+    public class RefAWTypeNamespace : DepTestPlugin
     {
+        [PluginReference]
+        RefUDeep? RefUDeep;
+
+        public override Plugin? DepPlugin => RefUDeep;
+        public override string PluginName => nameof(RefUDeep);
+
         protected override void Init()
         {
             base.Init();

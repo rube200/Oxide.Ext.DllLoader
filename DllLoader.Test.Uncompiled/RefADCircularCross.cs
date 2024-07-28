@@ -1,45 +1,74 @@
 using Oxide.Core.Plugins;
+using System;
+using System.Diagnostics;
 
 namespace Oxide.Plugins
 {
     [Info("RefADCircularCross", "Rube200", "1.0.0")]
     [Description("RefADCircularCross is for testing")]
-    public class RefADCircularCross : DepTestPlugin
+    public class RefADCircularCross : RustPlugin
     {
+        protected string SelfName => GetType().Name;
+
         [PluginReference]
-        Plugin RefACCircularCross;
+        Plugin? RefACCircularCross;
 
-        protected override Plugin DepPlugin => RefACCircularCross;
-        protected override string PuginName => nameof(RefACCircularCross);
+        public Plugin? DepPlugin => RefACCircularCross;
+        public string PluginName => nameof(RefACCircularCross);
 
-        protected override void Init()
+        protected void Init()
         {
-            base.Init();
+            Puts($"{SelfName} - Init");
+            CheckPluginLoaded();
         }
 
-        protected override void Loaded()
+        protected void Loaded()
         {
-            base.Loaded();
+            Puts($"{SelfName} - Loaded");
+            CheckPluginLoaded();
         }
 
-        protected override void OnServerInitialized()
+        protected void Unload()
         {
-            base.OnServerInitialized();
+            Puts($"{SelfName} - Unload");
         }
 
-        protected override void Unload()
+        protected void Shutdown()
         {
-            base.Unload();
+            Puts($"{SelfName} - Shutdown");
+            CheckPluginLoaded();
         }
 
-        protected override void Shutdown()
+        protected void Hotloading()
         {
-            base.Shutdown();
+            Puts($"{SelfName} - Hotloading");
+            CheckPluginLoaded();
         }
 
-        protected override void Hotloading()
+        protected void CallRef(string callerMsg)
         {
-            base.Hotloading();
+            Puts($"CallRef from: '{callerMsg}'");
+        }
+
+        public virtual void CheckPluginLoaded(bool callOnTimer = true)
+        {
+            var invocatorName = new StackTrace().GetFrame(1).GetMethod().Name;
+            if (callOnTimer)
+            {
+                timer.Once(3f, CallPluginRef);
+            }
+            else
+            {
+                CallPluginRef();
+            }
+
+            void CallPluginRef()
+            {
+                if (DepPlugin == null)
+                    throw new Exception($"{invocatorName} plugin ref ({PluginName}) is UNLOADED.");
+
+                DepPlugin.Call(nameof(CallRef), SelfName);
+            }
         }
     }
 }

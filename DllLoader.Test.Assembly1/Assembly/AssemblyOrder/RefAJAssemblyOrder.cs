@@ -1,11 +1,18 @@
 using DllLoader.Test.Libs;
+using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("RefPDeepCross", "Rube200", "1.0.0")]
-    [Description("RefPDeepCross is for testing")]
-    public class RefPDeepCross : TestPlugin
+    [Info("RefAJAssemblyOrder", "Rube200", "1.0.0")]
+    [Description("RefAJAssemblyOrder is for testing")]
+    public class RefAJAssemblyOrder : DepTestPlugin
     {
+        [PluginReference]
+        Plugin? RefAKAssemblyOrder;
+
+        public override Plugin? DepPlugin => RefAKAssemblyOrder;
+        public override string PluginName => nameof(RefAKAssemblyOrder);
+
         protected override void Init()
         {
             base.Init();

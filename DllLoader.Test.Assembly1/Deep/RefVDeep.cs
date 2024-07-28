@@ -1,18 +1,39 @@
+using DllLoader.Test.Libs;
+
 namespace Oxide.Plugins
 {
     [Info("RefVDeep", "Rube200", "1.0.0")]
     [Description("RefVDeep is for testing")]
-    public class RefVDeep : RustPlugin
+    public class RefVDeep : TestPlugin
     {
-        void Init()
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-            Puts($"I am alive {selfName}");
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

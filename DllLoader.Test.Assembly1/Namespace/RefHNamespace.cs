@@ -1,20 +1,40 @@
+using DllLoader.Test.Libs;
 using Oxide.Plugins;
 
 namespace Test.Namespace
 {
     [Info("RefHNamespace", "Rube200", "1.0.0")]
     [Description("RefHNamespace is for testing")]
-    public class RefHNamespace : RustPlugin
+    public class RefHNamespace : TestPlugin
     {
-        void Init()
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-            Puts($"I am alive {selfName}");
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

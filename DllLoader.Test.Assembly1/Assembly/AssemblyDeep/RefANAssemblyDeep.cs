@@ -1,11 +1,18 @@
-using DllLoader.Test.Libs;
+using Oxide.Core.Plugins;
+using Oxide.Plugins;
 
-namespace Oxide.Plugins
+namespace DllLoader.Test.Libs
 {
-    [Info("RefPDeepCross", "Rube200", "1.0.0")]
-    [Description("RefPDeepCross is for testing")]
-    public class RefPDeepCross : TestPlugin
+    [Info("RefANAssemblyDeep", "Rube200", "1.0.0")]
+    [Description("RefANAssemblyDeep is for testing")]
+    public class RefANAssemblyDeep : DepTestPlugin
     {
+        [PluginReference]
+        Plugin? RefAOAssemblyDeep;
+
+        public override Plugin? DepPlugin => RefAOAssemblyDeep;
+        public override string PluginName => nameof(RefAOAssemblyDeep);
+
         protected override void Init()
         {
             base.Init();

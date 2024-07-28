@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net48</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>1.0.1</Version>
+		<Version>0.0.0</Version>
 		<Authors>Rube200</Authors>
 		<Company>Rube200-Devs</Company>
 		<RepositoryType>Public</RepositoryType>
@@ -11,7 +11,14 @@
 		<RootNamespace>DllLoader.Test.Assembly1</RootNamespace>
 		<AssemblyName>DllLoader.Test.Assembly1</AssemblyName>
 		<NoWarn>0649</NoWarn>
+		<LangVersion>12</LangVersion>
+		<Nullable>enable</Nullable>
+		<WarningsAsErrors>nullable</WarningsAsErrors>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DllLoader.Test.Assembly2\DllLoader.Test.Assembly2.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="Oxide.Core">

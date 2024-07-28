@@ -1,11 +1,19 @@
 using DllLoader.Test.Libs;
+using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("RefPDeepCross", "Rube200", "1.0.0")]
-    [Description("RefPDeepCross is for testing")]
-    public class RefPDeepCross : TestPlugin
+    [Info("RefATAssemblyCircular", "Rube200", "1.0.0")]
+    [Description("RefATAssemblyCircular is for testing")]
+    public class RefATAssemblyCircular : DepTestPlugin
     {
+        [PluginReference]
+        Plugin? RefAUAssemblyCircular;
+
+        public override Plugin? DepPlugin => RefAUAssemblyCircular;
+
+        public override string PluginName => nameof(RefAUAssemblyCircular);
+
         protected override void Init()
         {
             base.Init();

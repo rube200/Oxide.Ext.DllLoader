@@ -1,6 +1,5 @@
 ﻿using Oxide.Core.Plugins;
 using System;
-using System.Diagnostics;
 
 namespace DllLoader.Test.Libs
 {
@@ -8,6 +7,7 @@ namespace DllLoader.Test.Libs
     {
         public abstract Plugin? DepPlugin { get; }
         public abstract string PluginName { get; }
+        public virtual float DelayTime { get; } = 3f;
 
         protected override void Init()
         {
@@ -50,10 +50,9 @@ namespace DllLoader.Test.Libs
 
         public virtual void CheckPluginLoaded(bool callOnTimer = true)
         {
-            var invocatorName = new StackTrace().GetFrame(1).GetMethod().Name;
             if (callOnTimer)
             {
-                timer.Once(3f, CallPluginRef);
+                timer.Once(DelayTime, CallPluginRef);
             }
             else
             {
@@ -63,7 +62,7 @@ namespace DllLoader.Test.Libs
             void CallPluginRef()
             {
                 if (DepPlugin == null)
-                    throw new Exception($"{invocatorName} plugin ref ({PluginName}) is UNLOADED.");
+                    throw new Exception($"{PluginName} plugin ref ({PluginName}) is UNLOADED.");
 
                 DepPlugin.Call(nameof(CallRef), SelfName);
             }

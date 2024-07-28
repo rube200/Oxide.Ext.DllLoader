@@ -1,33 +1,46 @@
-#region
-
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
-
-#endregion
 
 namespace Oxide.Plugins
 {
     [Info("RefSDeep", "Rube200", "1.0.0")]
     [Description("RefSDeep is for testing")]
-    public class RefSDeep : RustPlugin
+    public class RefSDeep : DepTestPlugin
     {
-        [PluginReference] private Plugin RefTDeep;
+        [PluginReference]
+        Plugin? RefTDeep;
 
-        private void Init()
+        public override Plugin? DepPlugin => RefTDeep;
+        public override string PluginName => nameof(RefTDeep);
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefTDeep != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefTDeep != null}");
-                RefTDeep?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }

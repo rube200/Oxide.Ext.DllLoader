@@ -1,33 +1,46 @@
-#region
-
+using DllLoader.Test.Libs;
 using Oxide.Core.Plugins;
-
-#endregion
 
 namespace Oxide.Plugins
 {
     [Info("RefAECircular", "Rube200", "1.0.0")]
     [Description("RefAECircular is for testing")]
-    public class RefAECircular : RustPlugin
+    public class RefAECircular : DepTestPlugin
     {
-        [PluginReference] private Plugin RefAFCircular;
+        [PluginReference]
+        Plugin? RefAFCircular;
 
-        private void Init()
+        public override Plugin? DepPlugin => RefAFCircular;
+        public override string PluginName => nameof(RefAFCircular);
+
+        protected override void Init()
         {
-            var selfName = GetType().Name;
-
-            Puts($"I am alive {selfName}");
-            Puts($"Is Ref Loaded? {RefAFCircular != null}");
-            timer.Once(3f, () =>
-            {
-                Puts($"Is Ref Loaded? (again) {RefAFCircular != null}");
-                RefAFCircular?.Call(nameof(CallRef), $"Hello this is {GetType().Name}");
-            });
+            base.Init();
         }
 
-        private void CallRef(string callerMsg)
+        protected override void Loaded()
         {
-            Puts($"CallRef says: '{callerMsg}'");
+            base.Loaded();
+        }
+
+        protected override void Unload()
+        {
+            base.Unload();
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+        }
+
+        protected override void Hotloading()
+        {
+            base.Hotloading();
+        }
+
+        protected override void CallRef(string callerMsg)
+        {
+            base.CallRef(callerMsg);
         }
     }
 }
