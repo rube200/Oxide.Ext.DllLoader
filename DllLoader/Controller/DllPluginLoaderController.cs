@@ -101,10 +101,9 @@ namespace Oxide.Ext.DllLoader.Controller
                 return;
             }
 
+            pluginInfo.Dispose();
             foreach (var depPlugin in _mapper.GetAllPlugins().Where(p => p.IsPluginLoaded && p.PluginReferences.Contains(plugin.Name)))
                 Interface.Oxide.UnloadPlugin(depPlugin.PluginName);
-
-            pluginInfo.Dispose();
         }
 
         #endregion
