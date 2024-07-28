@@ -40,13 +40,6 @@ namespace Oxide.Ext.DllLoader.Model
             }
         }
 
-        internal void MarkDirty()
-        {
-            _pluginReferences?.Clear();
-            _pluginReferences = null;
-            _plugin = null;
-        }
-
         private List<string> GetReferencesInPlugin()
         {
             var pluginRefMembers = AccessTools.GetDeclaredFields(PluginType).OfType<MemberInfo>().Union(AccessTools.GetDeclaredProperties(PluginType));
@@ -59,12 +52,11 @@ namespace Oxide.Ext.DllLoader.Model
                         return [];
 
                     var memberType = m.GetUnderlyingType();
-                    if (memberType!.IsSubclassOf(typeof(Plugin)))
-                        return [memberType.Name, getAttributeName()];
+                    if (!memberType!.IsSubclassOf(typeof(Plugin)))
+                        return [];
 
-                    return [getAttributeName()];
-
-                    string getAttributeName() => (attribute.Name ?? m.Name);
+                    //attribute.Name ?? m.Name
+                    return [memberType.Name];
                 })
                 .Where(n => n != null)
                 .Cast<string>()

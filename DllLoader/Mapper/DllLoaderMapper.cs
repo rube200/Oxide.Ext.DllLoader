@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Mono.Cecil;
 using Oxide.Core;
-using Oxide.Core.CSharp;
 using Oxide.Ext.DllLoader.API;
-using Oxide.Ext.DllLoader.Helper;
 using Oxide.Ext.DllLoader.Model;
 using static HarmonyLib.AccessTools;
 
@@ -21,6 +20,8 @@ namespace Oxide.Ext.DllLoader.Mapper
     {
         private readonly IDictionary<string, AssemblyInfo> _assembliesInfoByName =
             new Dictionary<string, AssemblyInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly IDictionary<string, IReadOnlyCollection<PluginInfo>> _pluginsInfoByAssemblyName = 
+            new Dictionary<string, IReadOnlyCollection<PluginInfo>>(StringComparer.OrdinalIgnoreCase);
 
         #region AssemblyResolver
 
@@ -36,6 +37,7 @@ namespace Oxide.Ext.DllLoader.Mapper
         {
             RemoveSearchDirectory(Interface.Oxide.ExtensionDirectory);
             AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolve;
+            _assembliesInfoByName.Values.Do(a => a.Dispose());
             _assembliesInfoByName.Clear();
         }
 
@@ -104,6 +106,18 @@ namespace Oxide.Ext.DllLoader.Mapper
             var dirFiles = new DirectoryInfo(directory).GetFiles("*.dll", SearchOption.TopDirectoryOnly);
             foreach (var file in dirFiles)
                 RegisterAssemblyFromFile(file);
+
+            foreach (var assemblyInfo in _assembliesInfoByName.Values.Where(a => !_pluginsInfoByAssemblyName.ContainsKey(a.OriginalName)))
+            {
+                try
+                {
+                    _pluginsInfoByAssemblyName.Add(assemblyInfo.OriginalName, assemblyInfo.PluginsInfo);
+                }
+                catch (Exception ex)
+                {
+                    Interface.Oxide.LogException($"Fail to patch assembly({assemblyInfo.OriginalName})", ex);
+                }
+            }
         }
 
         private static readonly FieldRef<object, IDictionary<string, AssemblyDefinition>> Cache = FieldRefAccess<IDictionary<string, AssemblyDefinition>>(typeof(DllLoaderMapper), "cache");
@@ -135,23 +149,20 @@ namespace Oxide.Ext.DllLoader.Mapper
                 return;
             }
 
-            assemblyInfo = new AssemblyInfo(assemblyDefinition, file.FullName);
-            try
-            {
-                ApplyPatches(assemblyInfo);
+            assemblyInfo = new AssemblyInfo(assemblyDefinition, file.FullName, this);
 
-                _assembliesInfoByName[assemblyInfo.OriginalName] = assemblyInfo;
-                Cache(this)[assemblyInfo.OriginalName] = assemblyInfo.AssemblyDefinition;
-            }
-            catch (Exception ex)
-            {
-                Interface.Oxide.LogException($"Fail to patch assembly({assemblyInfo.OriginalName})", ex);
-            }
+            _assembliesInfoByName.Add(assemblyInfo.OriginalName, assemblyInfo);
+            Cache(this)[assemblyInfo.OriginalName] = assemblyInfo.AssemblyDefinition;
         }
 
         #endregion
 
         #region Getters
+
+        public IReadOnlyCollection<PluginInfo> GetAllPlugins()
+        {
+            return _pluginsInfoByAssemblyName.Values.SelectMany(p => p).ToList();
+        }
 
         public AssemblyDefinition GetAssemblyDefinitionFromFile(string filepath)
         {
@@ -175,36 +186,13 @@ namespace Oxide.Ext.DllLoader.Mapper
             return _assembliesInfoByName.Values.FirstOrDefault(assemblyInfo => assemblyInfo.IsFile(fileName));
         }
 
-        #endregion
-
-        public void ApplyPatches(AssemblyInfo assemblyInfo)
+        public void RemoveAssembly(AssemblyInfo assemblyInfo)
         {
-#if DEBUG
-            Interface.Oxide.LogDebug("Loading assembly({0}) from assembly info.", assemblyInfo.OriginalName);
-#endif
-            var assemblyDefinition = assemblyInfo.AssemblyDefinition;
-            var originalName = assemblyDefinition.Name.Name;
-#if DEBUG
-            Interface.Oxide.LogDebug("Patching assembly({0})...", originalName);
-            Interface.Oxide.LogDebug("Patching assembly name...");
-#endif
-            assemblyDefinition.Name.Name = $"{assemblyDefinition.Name.Name}-{DateTime.UtcNow.Ticks}";
-#if DEBUG
-            Interface.Oxide.LogDebug("Patch name complete. New name({0}) | Old name({1}).", assemblyDefinition.Name.Name, originalName);
-#endif
-
-            var pluginTypes = assemblyDefinition.GetPluginTypes();
-#if DEBUG
-            Interface.Oxide.LogDebug("Patching assembly oxide...");
-#endif
-            foreach (var pluginType in pluginTypes)
-                _ = new DirectCallMethod(pluginType.Module, pluginType, new ReaderParameters { AssemblyResolver = this });
-#if DEBUG
-            Interface.Oxide.LogDebug("Patch oxide complete.");
-#endif
-#if DEBUG
-            Interface.Oxide.LogDebug("All patches to assembly({0}) are completed.", originalName);
-#endif
+            _assembliesInfoByName.Remove(assemblyInfo.OriginalName);
+            _pluginsInfoByAssemblyName.Remove(assemblyInfo.OriginalName);
+            assemblyInfo.Dispose();
         }
+
+        #endregion
     }
 }

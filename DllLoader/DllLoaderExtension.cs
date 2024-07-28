@@ -8,6 +8,7 @@ using Oxide.Ext.DllLoader.Controller;
 using Oxide.Ext.DllLoader.Model;
 using Oxide.Ext.DllLoader.Watcher;
 using System;
+using System.Linq;
 
 #endregion
 
@@ -99,7 +100,7 @@ namespace Oxide.Ext.DllLoader
 #if DEBUG
             Interface.Oxide.LogDebug("Assembly({0}) file removed. Unloading plugins...", assemblyName);
 #endif
-            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.UnloadPlugin, assemblyInfo => assemblyInfo.MarkDirty());
+            ExecuteAssemblyEvent(eventName, assemblyName, Interface.Oxide.UnloadPlugin, _pluginLoader.Mapper.RemoveAssembly);
         }
 
         private void OnPluginSourceChanged(string assemblyName)

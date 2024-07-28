@@ -19,7 +19,7 @@ namespace Oxide.Ext.DllLoader.Controller
     {
         private readonly IDllLoaderMapperLoadable _mapper = new DllLoaderMapper();
         private readonly List<Plugin> _onFramePlugins = [];
-        private readonly List<string> _pluginsWaitingDep = [];
+        private readonly Dictionary<string, PluginInfo> _pluginsWaitingDep = [];
 
         public IDllLoaderMapper Mapper => _mapper;
         public IReadOnlyCollection<Plugin> OnFramePlugins => _onFramePlugins;
@@ -101,7 +101,10 @@ namespace Oxide.Ext.DllLoader.Controller
                 return;
             }
 
-            pluginInfo.MarkDirty();
+            foreach (var depPlugin in _mapper.GetAllPlugins().Where(p => p.IsPluginLoaded && p.PluginReferences.Contains(plugin.Name)))
+                Interface.Oxide.UnloadPlugin(depPlugin.PluginName);
+
+            pluginInfo.Dispose();
         }
 
         #endregion
@@ -131,15 +134,24 @@ namespace Oxide.Ext.DllLoader.Controller
         private bool LoadPlugin(PluginInfo pluginInfo)
         {
             var pluginName = pluginInfo.PluginName;
-            if (!pluginInfo.PluginReferences.All(LoadedPlugins.ContainsKey))
+            var referencesNotLoaded = pluginInfo.PluginReferences.Where(p => !LoadedPlugins.ContainsKey(p));
+            if (referencesNotLoaded.Any())
             {
-                var referencesLoading = pluginInfo.PluginReferences.Where(p => LoadingPlugins.Contains(p) && !_pluginsWaitingDep.Contains(p));
-                if (referencesLoading.Any())
+                //var referencesLoading = pluginInfo.PluginReferences.Where(p => LoadingPlugins.Contains(p) && !_pluginsWaitingDep.Contains(p));
+                var missingReferences = referencesNotLoaded.Where(p => !LoadingPlugins.Contains(p));
+                if (missingReferences.Any())
+                {
+                    PluginErrors[pluginName] = $"Fail to load plugin({pluginName}) missing dependencies: {missingReferences.ToSentence()}";
+                    Interface.Oxide.LogError("Fail to load plugin({0}) missing dependencies: {1}", pluginName, missingReferences.ToSentence());
+                    return false;
+                }
+                
+                if (referencesNotLoaded.Any(p => !_pluginsWaitingDep.ContainsKey(p)))
                 {
 #if DEBUG
-                    Interface.Oxide.LogDebug("Plugin({0}) is waiting for dependencies to load: {1}", pluginName, referencesLoading.ToSentence());
+                    Interface.Oxide.LogDebug("Plugin({0}) is waiting for dependencies to load: {1}", pluginName, referencesNotLoaded.ToSentence());
 #endif
-                    _pluginsWaitingDep.Add(pluginName);
+                    _pluginsWaitingDep.Add(pluginName, pluginInfo);
                     return false;
                 }
             }
@@ -160,39 +172,28 @@ namespace Oxide.Ext.DllLoader.Controller
             Interface.Oxide.UnloadPlugin(pluginName);
             LoadedPlugins[pluginName] = InstantiatePlugin(pluginInfo);
 
-            Interface.Oxide.LogInfo("Plugin({0}) loadded successfully.", pluginName);
+            Interface.Oxide.LogInfo("Plugin({0}) loaded successfully.", pluginName);
             PluginLoaded(pluginName);
             return true;
         }
 
-        private void PluginLoaded(string pluginName)
+        private void PluginLoaded(string loadedPluginName)
         {
-            LoadingPlugins.Remove(pluginName);
+            LoadingPlugins.Remove(loadedPluginName);
 
 #if DEBUG
             Interface.Oxide.LogDebug("Checking dependents to load...");
 #endif
-            foreach (var loadingPluginName in LoadingPlugins.ToArray())
+            foreach (var toLoadPluginName in _pluginsWaitingDep.Keys.ToArray())
             {
-                var loadingAssemblyInfo = Mapper.GetAssemblyInfoByPlugin(loadingPluginName);
-                var loadingPluginInfo = loadingAssemblyInfo?.GetPluginInfo(loadingPluginName);
-                if (loadingPluginInfo == null)
-                {
-                    LoadingPlugins.Remove(pluginName);
-
-                    Interface.Oxide.LogError("Fail to find plugin({0}) in assembly({1}).", pluginName, loadingAssemblyInfo?.OriginalName ?? "???");
-                    PluginErrors[pluginName] = $"Fail to find plugin info.";
-                    continue;
-                }
-
                 //we need this check since we copied the list
-                if (LoadingPlugins.Contains(loadingPluginName) && loadingPluginInfo.PluginReferences.Contains(pluginName))
+                if (_pluginsWaitingDep.TryGetValue(toLoadPluginName, out var toLoadPluginInfo) && toLoadPluginInfo!.PluginReferences.Contains(loadedPluginName))
                 {
 #if DEBUG
-                    Interface.Oxide.LogDebug("Found dependant plugin({0}) from assembly({1}). Loading it...", pluginName, loadingAssemblyInfo!.OriginalName);
+                    Interface.Oxide.LogDebug("Found dependent plugin({0}) from assembly({1}). Loading it...", toLoadPluginName, toLoadPluginInfo!.AssemblyName);
 #endif
-                    if (LoadPlugin(loadingPluginInfo))
-                        _pluginsWaitingDep.Remove(loadingPluginName);
+                    if (LoadPlugin(toLoadPluginInfo))
+                        _pluginsWaitingDep.Remove(toLoadPluginName);
                 }
             }
         }
