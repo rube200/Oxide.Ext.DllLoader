@@ -18,18 +18,23 @@
 	<ItemGroup>
 		<Reference Include="0Harmony">
 			<HintPath>..\Oxide.Libs\0Harmony.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Oxide.Core">
 			<HintPath>..\Oxide.Libs\Oxide.Core.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Oxide.CSharp">
 			<HintPath>..\Oxide.Libs\Oxide.CSharp.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Oxide.References">
 			<HintPath>..\Oxide.Libs\Oxide.References.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Oxide.Rust">
 			<HintPath>..\Oxide.Libs\Oxide.Rust.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 	</ItemGroup>
 
